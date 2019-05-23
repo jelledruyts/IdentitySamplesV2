@@ -1,10 +1,11 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading.Tasks;
-using Expenses.Client.WebApp.Models;
+using Expenses.Client.WebApp.Infrastructure;
+using Expenses.Common;
+using Expenses.Common.Models;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 
@@ -14,25 +15,29 @@ namespace Expenses.Client.WebApp.Controllers
     public class AccountController : Controller
     {
         private readonly IHttpClientFactory httpClientFactory;
+        private readonly TokenProvider tokenProvider;
 
-        public AccountController(IHttpClientFactory httpClientFactory)
+        public AccountController(IHttpClientFactory httpClientFactory, TokenProvider tokenProvider)
         {
             this.httpClientFactory = httpClientFactory;
+            this.tokenProvider = tokenProvider;
         }
 
         public async Task<IActionResult> Identity()
         {
             var relatedApplicationIdentities = new List<IdentityInfo>();
-            try
+            if (this.User.Identity.IsAuthenticated)
             {
-                // Request identity information as seen by the back-end Web API.
-                var client = this.httpClientFactory.CreateClient(Constants.HttpClientNames.ExpensesApi);
-                // Fetch the access token from the current user's claims to avoid the complexity of an external token cache (see Startup.cs).
-                var accessTokenClaim = this.User.Claims.SingleOrDefault(c => c.Type == Constants.ClaimTypes.AccessToken);
-                if (accessTokenClaim != null)
+                try
                 {
-                    // Call the back-end Web API using the bearer access token.
-                    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessTokenClaim.Value);
+                    // Get an HTTP client that is pre-configured with the back-end Web API root URL.
+                    var client = this.httpClientFactory.CreateClient(Constants.HttpClientNames.ExpensesApi);
+
+                    // Call the back-end Web API using a bearer access token retrieved from the token provider.
+                    var token = await this.tokenProvider.GetTokenForUserAsync(this.HttpContext, this.User, new[] { this.tokenProvider.GetApiScope(Constants.Scopes.ExpensesRead) });
+                    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token.AccessToken);
+
+                    // Request identity information as seen by the back-end Web API.
                     var response = await client.GetAsync("api/account/identity");
                     response.EnsureSuccessStatusCode();
 
@@ -41,28 +46,14 @@ namespace Expenses.Client.WebApp.Controllers
                     var apiIdentityInfo = JsonConvert.DeserializeObject<IdentityInfo>(apiIdentityInfoValue);
                     relatedApplicationIdentities.Add(apiIdentityInfo);
                 }
-            }
-            catch (Exception exc)
-            {
-                relatedApplicationIdentities.Add(new IdentityInfo
+                catch (Exception exc)
                 {
-                    Source = "Exception",
-                    Application = "Expense API",
-                    IsAuthenticated = false,
-                    Claims = new[] { new ClaimInfo { Type = "ExceptionMessage", Value = exc.Message }, new ClaimInfo { Type = "ExceptionDetail", Value = exc.ToString() } }
-                });
+                    relatedApplicationIdentities.Add(IdentityInfo.FromException(exc, "Expense API"));
+                }
             }
+
             // Return identity information as seen from this application, including related applications.
-            var identityInfo = new IdentityInfo
-            {
-                Source = "ID Token",
-                Application = "Expense Web App",
-                IsAuthenticated = this.User.Identity.IsAuthenticated,
-                Name = this.User.Identity.Name,
-                AuthenticationType = this.User.Identity.AuthenticationType,
-                Claims = this.User.Claims.Select(c => new ClaimInfo { Type = c.Type, Value = c.Value }).ToList(),
-                RelatedApplicationIdentities = relatedApplicationIdentities
-            };
+            var identityInfo = IdentityInfo.FromPrincipal(this.User, "ID Token", "Expense Web App", relatedApplicationIdentities);
             return View(identityInfo);
         }
     }

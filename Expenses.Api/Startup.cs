@@ -1,22 +1,16 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IdentityModel.Tokens.Jwt;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using System.IdentityModel.Tokens.Jwt;
 using Expenses.Api.Infrastructure;
+using Expenses.Common;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.AzureAD.UI;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Authorization;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 namespace Expenses.Api
 {
@@ -47,19 +41,21 @@ namespace Expenses.Api
                 // Set the valid audiences for the incoming JWT bearer token.
                 options.TokenValidationParameters.ValidAudiences = new string[]
                 {
-                     Configuration.GetValue<string>("AzureAd:ClientId"),
-                     Configuration.GetValue<string>("App:AppIdUri") // Azure AD v2.0 issues access tokens with the App ID URI as the audience
+                     Configuration["AzureAd:ClientId"],
+                     Configuration["App:AppIdUri"] // Azure AD v2.0 issues access tokens with the App ID URI as the audience
                 };
             });
 
             // Define authorization policies that can be applied to API's.
             services.AddAuthorization(options =>
             {
+                // Define the "ReadMyExpenses" authorization policy.
                 options.AddPolicy(Constants.AuthorizationPolicies.ReadMyExpenses, b =>
                 {
                     // Require the "Expense.Read" and/or "Expense.ReadWrite" scope.
                     b.RequireClaim(Constants.ClaimTypes.Scope, Constants.Scopes.ExpensesRead, Constants.Scopes.ExpensesReadWrite);
                 });
+                // Define the "ReadWriteMyExpenses" authorization policy.
                 options.AddPolicy(Constants.AuthorizationPolicies.ReadWriteMyExpenses, b =>
                 {
                     // Require the "Expense.ReadWrite" scope.

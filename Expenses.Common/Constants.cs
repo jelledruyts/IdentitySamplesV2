@@ -1,4 +1,4 @@
-namespace Expenses.Client.WebApp
+namespace Expenses.Common
 {
     public static class Constants
     {
@@ -11,21 +11,29 @@ namespace Expenses.Client.WebApp
 
         public static class Roles
         {
-            public const string ExpenseSubmitter = "ExpenseSubmitter"; // This role can be granted to users only.
-            public const string ExpenseApprover = "ExpenseApprover"; // This role can be granted to users only.
+            public const string ExpenseSubmitter = "Expense Submitter"; // This role can be granted to users only.
+            public const string ExpenseApprover = "Expense Approver"; // This role can be granted to users only.
+            public const string ExpenseReadWriteAll = "Expense.ReadWrite.All"; // This role can be granted to applications only (as an application permission).
         }
 
         public static class ClaimTypes
         {
             public const string ObjectId = "oid";
+            public const string TenantId = "tid";
             public const string Roles = "roles";
-            public const string AccessToken = "access_token"; // TODO: Remove when using MSAL
-            public const string RefreshToken = "refresh_token"; // TODO: Remove when using MSAL
+            public const string Scope = "scp";
+            public const string AccountId = "aid";
         }
 
         public static class HttpClientNames
         {
             public const string ExpensesApi = nameof(ExpensesApi);
+        }
+
+        public static class AuthorizationPolicies
+        {
+            public const string ReadMyExpenses = nameof(ReadMyExpenses);
+            public const string ReadWriteMyExpenses = nameof(ReadWriteMyExpenses);
         }
     }
 }

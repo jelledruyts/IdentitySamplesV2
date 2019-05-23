@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace Expenses.Client.WebApp.Models
+namespace Expenses.Common.Models
 {
     /// <summary>
     /// Represents information about a claim.

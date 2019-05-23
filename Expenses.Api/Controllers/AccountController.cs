@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
-using Expenses.Api.Models;
+using Expenses.Common.Models;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Expenses.Api.Controllers
@@ -14,15 +14,7 @@ namespace Expenses.Api.Controllers
         public ActionResult<IdentityInfo> Identity()
         {
             // Return identity information as seen from this application.
-            return new IdentityInfo
-            {
-                Source = "Access Token",
-                Application = "Expense API",
-                IsAuthenticated = this.User.Identity.IsAuthenticated,
-                Name = this.User.Identity.Name,
-                AuthenticationType = this.User.Identity.AuthenticationType,
-                Claims = this.User.Claims.Select(c => new ClaimInfo { Type = c.Type, Value = c.Value }).ToList()
-            };
+            return IdentityInfo.FromPrincipal(this.User, "Access Token", "Expense API");
         }
 
         [HttpGet]

@@ -1,6 +1,6 @@
 using System;
 
-namespace Expenses.Api.Models
+namespace Expenses.Common.Models
 {
     public class Expense
     {

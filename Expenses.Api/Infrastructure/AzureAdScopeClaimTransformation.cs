@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using Expenses.Common;
 using Microsoft.AspNetCore.Authentication;
 
 namespace Expenses.Api.Infrastructure
