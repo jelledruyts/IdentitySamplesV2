@@ -200,6 +200,19 @@ namespace Expenses.Client.WebApp
                     //context.Properties.IsPersistent = true; // Optionally ensure the cookie is persistent across browser sessions.
                     return Task.CompletedTask;
                 };
+
+                var onRedirectToIdentityProviderForSignOut = options.Events.OnRedirectToIdentityProviderForSignOut;
+                options.Events.OnRedirectToIdentityProviderForSignOut = async context =>
+                {
+                    if (onRedirectToIdentityProviderForSignOut != null)
+                    {
+                        await onRedirectToIdentityProviderForSignOut(context);
+                    }
+
+                    // Remove the user from the MSAL cache.
+                    var user = context.HttpContext.User;
+                    await tokenProvider.RemoveUserAsync(context.HttpContext, user);
+                };
             });
             services.Configure<CookieAuthenticationOptions>(AzureADDefaults.CookieScheme, options =>
             {

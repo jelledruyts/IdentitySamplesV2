@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Security.Claims;
 using System.Threading.Tasks;
@@ -33,6 +34,14 @@ namespace Expenses.Client.WebApp.Infrastructure
             var confidentialClientApplication = GetConfidentialClientApplication(httpContext, user);
             var userAccount = await confidentialClientApplication.GetAccountAsync(user.GetAccountId());
             return await confidentialClientApplication.AcquireTokenSilent(scopes, userAccount).ExecuteAsync();
+        }
+
+        public async Task RemoveUserAsync(HttpContext httpContext, ClaimsPrincipal user)
+        {
+            var confidentialClientApplication = GetConfidentialClientApplication(httpContext, user);
+            var userAccount = await confidentialClientApplication.GetAccountAsync(user.GetAccountId());
+            await confidentialClientApplication.RemoveAsync(userAccount);
+            UserTokenCacheWrapper.RemoveUser(user);
         }
 
         private IConfidentialClientApplication GetConfidentialClientApplication(HttpContext httpContext, ClaimsPrincipal user)
@@ -90,6 +99,15 @@ namespace Expenses.Client.WebApp.Infrastructure
                 userTokenCache.SetBeforeAccess(UserTokenCacheBeforeAccessNotification);
                 userTokenCache.SetBeforeWrite(UserTokenCacheBeforeWriteNotification);
                 userTokenCache.SetAfterAccess(UserTokenCacheAfterAccessNotification);
+            }
+
+            public static void RemoveUser(ClaimsPrincipal user)
+            {
+                var userKey = user.GetAccountId();
+                if (userTokenCache.ContainsKey(userKey))
+                {
+                    userTokenCache.Remove(userKey);
+                }
             }
 
             private void UserTokenCacheBeforeAccessNotification(TokenCacheNotificationArgs args)
