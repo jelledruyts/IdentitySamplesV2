@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using Expenses.Common;
@@ -9,31 +10,44 @@ using Microsoft.Identity.Client;
 
 namespace Expenses.Client.WebApp.Infrastructure
 {
-    public class TokenProvider
+    public class MsalTokenProvider
     {
-        private readonly TokenProviderOptions options;
+        private readonly MsalTokenProviderOptions options;
 
-        public TokenProvider(TokenProviderOptions options)
+        public MsalTokenProvider(MsalTokenProviderOptions options)
         {
             this.options = options;
         }
 
-        public string GetApiScope(string scopeName)
+        public string GetFullyQualifiedScope(string scope)
         {
-            return $"{this.options.ExpensesApiAppIdUri}/{scopeName}";
+            // Scopes can have placeholders in them so that the App ID URI can be replaced from configuration.
+            if (this.options.ScopePlaceholderMappings != null)
+            {
+                foreach (var mapping in this.options.ScopePlaceholderMappings)
+                {
+                    scope = scope.Replace(mapping.Key, mapping.Value);
+                }
+            }
+            return scope;
+        }
+
+        public IEnumerable<string> GetFullyQualifiedScopes(IEnumerable<string> scopes)
+        {
+            return scopes.Select(s => GetFullyQualifiedScope(s)).ToArray();
         }
 
         public async Task<AuthenticationResult> RedeemAuthorizationCodeAsync(HttpContext httpContext, string authorizationCode, IEnumerable<string> scopes)
         {
             var confidentialClientApplication = GetConfidentialClientApplication(httpContext, httpContext.User);
-            return await confidentialClientApplication.AcquireTokenByAuthorizationCode(scopes, authorizationCode).ExecuteAsync();
+            return await confidentialClientApplication.AcquireTokenByAuthorizationCode(GetFullyQualifiedScopes(scopes), authorizationCode).ExecuteAsync();
         }
 
         public async Task<AuthenticationResult> GetTokenForUserAsync(HttpContext httpContext, ClaimsPrincipal user, IEnumerable<string> scopes)
         {
             var confidentialClientApplication = GetConfidentialClientApplication(httpContext, user);
             var userAccount = await confidentialClientApplication.GetAccountAsync(user.GetAccountId());
-            return await confidentialClientApplication.AcquireTokenSilent(scopes, userAccount).ExecuteAsync();
+            return await confidentialClientApplication.AcquireTokenSilent(GetFullyQualifiedScopes(scopes), userAccount).ExecuteAsync();
         }
 
         public async Task RemoveUserAsync(HttpContext httpContext, ClaimsPrincipal user)
@@ -54,6 +68,9 @@ namespace Expenses.Client.WebApp.Infrastructure
                 TenantId = this.options.TenantId,
                 RedirectUri = redirectUri
             }).Build();
+            // Use in-memory cache persistence classes that are by design very naive and not designed for real production
+            // scenarios (e.g. these are explicitly not thread-safe so they won't be usable under real user load).
+            // See https://aka.ms/msal-net-token-cache-serialization for details on production level token caches.
             new AppTokenCacheWrapper(confidentialClientApplication.AppTokenCache);
             new UserTokenCacheWrapper(confidentialClientApplication.UserTokenCache, user);
             return confidentialClientApplication;
@@ -90,12 +107,12 @@ namespace Expenses.Client.WebApp.Infrastructure
 
         private class UserTokenCacheWrapper
         {
-            private string userKey;
+            private readonly ClaimsPrincipal user;
             private static readonly IDictionary<string, byte[]> userTokenCache = new Dictionary<string, byte[]>();
 
             public UserTokenCacheWrapper(ITokenCache userTokenCache, ClaimsPrincipal user)
             {
-                this.userKey = user.GetAccountId();
+                this.user = user;
                 userTokenCache.SetBeforeAccess(UserTokenCacheBeforeAccessNotification);
                 userTokenCache.SetBeforeWrite(UserTokenCacheBeforeWriteNotification);
                 userTokenCache.SetAfterAccess(UserTokenCacheAfterAccessNotification);
@@ -112,9 +129,9 @@ namespace Expenses.Client.WebApp.Infrastructure
 
             private void UserTokenCacheBeforeAccessNotification(TokenCacheNotificationArgs args)
             {
-                if (userTokenCache.ContainsKey(GetUserKey(args)))
+                if (userTokenCache.ContainsKey(GetCacheKey(args)))
                 {
-                    args.TokenCache.DeserializeMsalV3(userTokenCache[GetUserKey(args)]);
+                    args.TokenCache.DeserializeMsalV3(userTokenCache[GetCacheKey(args)]);
                 }
             }
 
@@ -126,21 +143,18 @@ namespace Expenses.Client.WebApp.Infrastructure
             {
                 if (args.HasStateChanged)
                 {
-                    userTokenCache[GetUserKey(args)] = args.TokenCache.SerializeMsalV3();
+                    userTokenCache[GetCacheKey(args)] = args.TokenCache.SerializeMsalV3();
                 }
             }
 
-            private string GetUserKey(TokenCacheNotificationArgs args)
+            private string GetCacheKey(TokenCacheNotificationArgs args)
             {
-                if (this.userKey == null)
-                {
-                    var msalAccountId = args.Account?.HomeAccountId?.Identifier;
-                    if (!string.IsNullOrEmpty(msalAccountId))
-                    {
-                        this.userKey = msalAccountId;
-                    }
-                }
-                return this.userKey;
+                // The user's account identifier is used as the cache key, and can either be found
+                // in the requested cache notification (e.g. when redeeming the authorization code
+                // for an access token), or in the current user's claims (when the user is already
+                // authenticated).
+                var accountId = args.Account?.HomeAccountId?.Identifier;
+                return string.IsNullOrEmpty(accountId) ? this.user.GetAccountId() : accountId;
             }
         }
     }

@@ -1,7 +1,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
+using Expenses.Common;
 using Expenses.Common.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Expenses.Api.Controllers
@@ -10,6 +12,7 @@ namespace Expenses.Api.Controllers
     [ApiController]
     public class AccountController : ControllerBase
     {
+        [Authorize(Constants.AuthorizationPolicies.ReadMyIdentity)]
         [HttpGet]
         public ActionResult<IdentityInfo> Identity()
         {
@@ -17,6 +20,7 @@ namespace Expenses.Api.Controllers
             return IdentityInfo.FromPrincipal(this.User, "Access Token", "Expense API");
         }
 
+        [Authorize(Constants.AuthorizationPolicies.ReadMyIdentity)]
         [HttpGet]
         public ActionResult<IEnumerable<string>> Roles()
         {

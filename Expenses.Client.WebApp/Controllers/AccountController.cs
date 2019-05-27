@@ -15,9 +15,9 @@ namespace Expenses.Client.WebApp.Controllers
     public class AccountController : Controller
     {
         private readonly IHttpClientFactory httpClientFactory;
-        private readonly TokenProvider tokenProvider;
+        private readonly MsalTokenProvider tokenProvider;
 
-        public AccountController(IHttpClientFactory httpClientFactory, TokenProvider tokenProvider)
+        public AccountController(IHttpClientFactory httpClientFactory, MsalTokenProvider tokenProvider)
         {
             this.httpClientFactory = httpClientFactory;
             this.tokenProvider = tokenProvider;
@@ -28,13 +28,14 @@ namespace Expenses.Client.WebApp.Controllers
             var relatedApplicationIdentities = new List<IdentityInfo>();
             if (this.User.Identity.IsAuthenticated)
             {
+                // Get an access token from the MSAL token provider to call the back-end Web API with permissions to read identity information.
+                var token = await this.tokenProvider.GetTokenForUserAsync(this.HttpContext, this.User, new[] { Constants.Placeholders.ExpensesApiScopeIdentityRead });
                 try
                 {
                     // Get an HTTP client that is pre-configured with the back-end Web API root URL.
                     var client = this.httpClientFactory.CreateClient(Constants.HttpClientNames.ExpensesApi);
 
                     // Call the back-end Web API using a bearer access token retrieved from the token provider.
-                    var token = await this.tokenProvider.GetTokenForUserAsync(this.HttpContext, this.User, new[] { this.tokenProvider.GetApiScope(Constants.Scopes.ExpensesRead) });
                     client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token.AccessToken);
 
                     // Request identity information as seen by the back-end Web API.

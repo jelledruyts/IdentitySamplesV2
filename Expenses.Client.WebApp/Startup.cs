@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Net.Http;
@@ -41,15 +42,18 @@ namespace Expenses.Client.WebApp
             });
 
             // Create a token provider based on MSAL.
-            var tokenProvider = new TokenProvider(new TokenProviderOptions
+            var tokenProvider = new MsalTokenProvider(new MsalTokenProviderOptions
             {
-                ExpensesApiAppIdUri = Configuration["App:ExpensesApi:AppIdUri"],
+                ScopePlaceholderMappings = new Dictionary<string, string>
+                {
+                    { Constants.Placeholders.ExpensesApiAppIdUri, Configuration["App:ExpensesApi:AppIdUri"] }
+                },
                 CallbackPath = Configuration["AzureAd:CallbackPath"] ?? string.Empty,
                 ClientId = Configuration["AzureAd:ClientId"],
                 ClientSecret = Configuration["AzureAd:ClientSecret"],
                 TenantId = Configuration["AzureAd:TenantId"]
             });
-            services.AddSingleton<TokenProvider>(tokenProvider);
+            services.AddSingleton<MsalTokenProvider>(tokenProvider);
 
             // Don't map any standard OpenID Connect claims to Microsoft-specific claims.
             // See https://leastprivilege.com/2017/11/15/missing-claims-in-the-asp-net-core-2-openid-connect-handler/.
@@ -67,7 +71,7 @@ namespace Expenses.Client.WebApp
                 options.Authority += "/v2.0";
 
                 // The Azure AD v2.0 endpoint returns the display name in the "preferred_username" claim.
-                options.TokenValidationParameters.NameClaimType = "preferred_username";
+                options.TokenValidationParameters.NameClaimType = Constants.ClaimTypes.PreferredUsername;
 
                 // Azure AD returns the roles in the "roles" claims (if any).
                 options.TokenValidationParameters.RoleClaimType = Constants.ClaimTypes.Roles;
@@ -75,11 +79,11 @@ namespace Expenses.Client.WebApp
                 // Trigger a hybrid OpenID Connect + authorization code flow.
                 options.ResponseType = OpenIdConnectResponseType.CodeIdToken;
 
-                // Define the API scopes that are requested by default (statically) as part of the sign-in so that the user can consent to them up-front.
-                var staticApiScopes = new[] { tokenProvider.GetApiScope(Constants.Scopes.ExpensesRead), tokenProvider.GetApiScope(Constants.Scopes.ExpensesReadWrite) };
+                // Define the API scopes that are requested by default as part of the sign-in so that the user can consent to them up-front.
+                var defaultApiScopes = new[] { tokenProvider.GetFullyQualifiedScope(Constants.Placeholders.ExpensesApiScopeIdentityRead) };
 
                 // Request the scopes from the API as part of the authorization code flow.
-                foreach (var apiScope in staticApiScopes)
+                foreach (var apiScope in defaultApiScopes)
                 {
                     options.Scope.Add(apiScope);
                 }
@@ -107,6 +111,11 @@ namespace Expenses.Client.WebApp
                     {
                         onRedirectToIdentityProvider(context);
                     }
+
+                    // Pass through additional parameters if requested.
+                    context.ProtocolMessage.LoginHint = context.Properties.GetParameter<string>(OpenIdConnectParameterNames.LoginHint) ?? context.ProtocolMessage.LoginHint;
+                    context.ProtocolMessage.DomainHint = context.Properties.GetParameter<string>(OpenIdConnectParameterNames.DomainHint) ?? context.ProtocolMessage.DomainHint;
+
                     return Task.CompletedTask;
                 };
 
@@ -120,7 +129,7 @@ namespace Expenses.Client.WebApp
 
                     // Use the MSAL token provider to redeem the authorizaation code for an ID token, access token and refresh token.
                     // These aren't used here directly (except the ID token) but they are added to the MSAL cache for later use.
-                    var result = await tokenProvider.RedeemAuthorizationCodeAsync(context.HttpContext, context.ProtocolMessage.Code, staticApiScopes);
+                    var result = await tokenProvider.RedeemAuthorizationCodeAsync(context.HttpContext, context.ProtocolMessage.Code, defaultApiScopes);
 
                     // Remember the MSAL home account identifier so it can be stored in the claims later on.
                     context.Properties.SetParameter(Constants.ClaimTypes.AccountId, result.Account.HomeAccountId.Identifier);
@@ -163,9 +172,8 @@ namespace Expenses.Client.WebApp
 
                     try
                     {
-                        // Get an access token for the user from the token provider to send to the back-end Web API.
-                        // Request the token for a scope that was already consented to (e.g. "Expenses.Read").
-                        var token = await tokenProvider.GetTokenForUserAsync(context.HttpContext, context.Principal, new[] { tokenProvider.GetApiScope(Constants.Scopes.ExpensesRead) });
+                        // Get an access token from the MSAL token provider to call the back-end Web API with permissions to read identity information.
+                        var token = await tokenProvider.GetTokenForUserAsync(context.HttpContext, context.Principal, new[] { Constants.Placeholders.ExpensesApiScopeIdentityRead });
 
                         // Use the access token to request the user's role information as seen by the back-end Web API.
                         var httpClientFactory = context.HttpContext.RequestServices.GetRequiredService<IHttpClientFactory>();
@@ -212,6 +220,10 @@ namespace Expenses.Client.WebApp
                     // Remove the user from the MSAL cache.
                     var user = context.HttpContext.User;
                     await tokenProvider.RemoveUserAsync(context.HttpContext, user);
+
+                    // Try to avoid displaying the "pick an account" dialog to the user if we already know who they are.
+                    context.ProtocolMessage.LoginHint = user.GetLoginHint();
+                    context.ProtocolMessage.DomainHint = user.GetDomainHint();
                 };
             });
             services.Configure<CookieAuthenticationOptions>(AzureADDefaults.CookieScheme, options =>
@@ -219,7 +231,12 @@ namespace Expenses.Client.WebApp
                 // Optionally set authentication cookie options here.
             });
 
-            services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
+            services.AddMvc()
+                .SetCompatibilityVersion(CompatibilityVersion.Version_2_2)
+                .AddMvcOptions(options =>
+                {
+                    options.Filters.Add(new MsalUiRequiredExceptionFilterAttribute());
+                });
             services.AddRouting(options => { options.LowercaseUrls = true; });
         }
 

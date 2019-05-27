@@ -49,6 +49,12 @@ namespace Expenses.Api
             // Define authorization policies that can be applied to API's.
             services.AddAuthorization(options =>
             {
+                // Define the "ReadMyIdentity" authorization policy.
+                options.AddPolicy(Constants.AuthorizationPolicies.ReadMyIdentity, b =>
+                {
+                    // Require the "Identity.Read scope.
+                    b.RequireClaim(Constants.ClaimTypes.Scope, Constants.Scopes.IdentityRead);
+                });
                 // Define the "ReadMyExpenses" authorization policy.
                 options.AddPolicy(Constants.AuthorizationPolicies.ReadMyExpenses, b =>
                 {

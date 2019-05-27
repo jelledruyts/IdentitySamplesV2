@@ -1,8 +1,10 @@
+using System.Collections.Generic;
+
 namespace Expenses.Client.WebApp.Infrastructure
 {
-    public class TokenProviderOptions
+    public class MsalTokenProviderOptions
     {
-        public string ExpensesApiAppIdUri { get; set; }
+        public IDictionary<string, string> ScopePlaceholderMappings { get; set; }
         public string CallbackPath { get; set; }
         public string ClientId { get; set; }
         public string ClientSecret { get; set; }
