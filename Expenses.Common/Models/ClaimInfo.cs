@@ -16,5 +16,10 @@ namespace Expenses.Common.Models
         /// The claim value.
         /// </summary>
         public string Value { get; set; }
+
+        /// <summary>
+        /// A remark about the claim (e.g. the interpretation of its value).
+        /// </summary>
+        public string Remark { get; set; }
     }
 }
