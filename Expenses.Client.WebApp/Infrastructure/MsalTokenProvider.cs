@@ -45,6 +45,10 @@ namespace Expenses.Client.WebApp.Infrastructure
 
         public async Task<AuthenticationResult> GetTokenForUserAsync(HttpContext httpContext, ClaimsPrincipal user, IEnumerable<string> scopes)
         {
+            if (user == null || !user.Identity.IsAuthenticated)
+            {
+                throw new ArgumentException($"The current user is not authenticated.");
+            }
             var confidentialClientApplication = GetConfidentialClientApplication(httpContext, user);
             var userAccount = await confidentialClientApplication.GetAccountAsync(user.GetAccountId());
             return await confidentialClientApplication.AcquireTokenSilent(GetFullyQualifiedScopes(scopes), userAccount).ExecuteAsync();

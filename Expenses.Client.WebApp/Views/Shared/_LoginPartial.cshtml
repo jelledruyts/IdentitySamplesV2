@@ -4,7 +4,7 @@
 @if (User.Identity.IsAuthenticated)
 {
         <li class="nav-item">
-            <span class="navbar-text text-dark">Hello @User.Identity.Name!</span>
+            <a class="nav-link" asp-controller="Account" asp-action="Identity">@User.Identity.Name</a>
         </li>
         <li class="nav-item">
             <a class="nav-link text-dark" asp-area="AzureAD" asp-controller="Account" asp-action="SignOut">Sign out</a>

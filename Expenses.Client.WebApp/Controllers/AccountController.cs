@@ -11,7 +11,6 @@ using Newtonsoft.Json;
 
 namespace Expenses.Client.WebApp.Controllers
 {
-    [Route("[controller]/[action]")]
     public class AccountController : Controller
     {
         private readonly IHttpClientFactory httpClientFactory;
@@ -23,6 +22,7 @@ namespace Expenses.Client.WebApp.Controllers
             this.tokenProvider = tokenProvider;
         }
 
+        [Route("[controller]/[action]")]
         public async Task<IActionResult> Identity()
         {
             var relatedApplicationIdentities = new List<IdentityInfo>();

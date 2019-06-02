@@ -15,9 +15,10 @@ namespace Expenses.Client.WebApp.Controllers
 
         [AllowAnonymous]
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-        public IActionResult Error()
+        [Route("[action]")]
+        public IActionResult Error(string message)
         {
-            return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+            return View(new ErrorViewModel { Message = message ?? "An error occurred while processing your request.", RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
         }
     }
 }

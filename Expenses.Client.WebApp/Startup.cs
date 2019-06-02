@@ -70,7 +70,7 @@ namespace Expenses.Client.WebApp
                 // Use the Azure AD v2.0 endpoint.
                 options.Authority += "/v2.0";
 
-                // The Azure AD v2.0 endpoint returns the display name in the "preferred_username" claim.
+                // The Azure AD v2.0 endpoint returns the display name in the "preferred_username" claim for ID tokens.
                 options.TokenValidationParameters.NameClaimType = Constants.ClaimTypes.PreferredUsername;
 
                 // Azure AD returns the roles in the "roles" claims (if any).
@@ -229,6 +229,28 @@ namespace Expenses.Client.WebApp
             services.Configure<CookieAuthenticationOptions>(AzureADDefaults.CookieScheme, options =>
             {
                 // Optionally set authentication cookie options here.
+            });
+
+            // Define authorization policies that can be applied to controllers.
+            services.AddAuthorization(options =>
+            {
+                // Define the "ReadMyExpenses" authorization policy.
+                options.AddPolicy(Constants.AuthorizationPolicies.ReadMyExpenses, b =>
+                {
+                    b.RequireAuthenticatedUser();
+                });
+                // Define the "ReadWriteMyExpenses" authorization policy.
+                options.AddPolicy(Constants.AuthorizationPolicies.ReadWriteMyExpenses, b =>
+                {
+                    // Require the "ExpenseSubmitter" role.
+                    b.RequireRole(Constants.Roles.ExpenseSubmitter);
+                });
+                // Define the "ApproveExpenses" authorization policy.
+                options.AddPolicy(Constants.AuthorizationPolicies.ApproveExpenses, b =>
+                {
+                    // Require the "ExpenseApprover" role.
+                    b.RequireRole(Constants.Roles.ExpenseApprover);
+                });
             });
 
             services.AddMvc()

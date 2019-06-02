@@ -12,8 +12,8 @@ namespace Expenses.Common
 
         public static class Roles
         {
-            public const string ExpenseSubmitter = "Expense Submitter"; // This role can be granted to users only.
-            public const string ExpenseApprover = "Expense Approver"; // This role can be granted to users only.
+            public const string ExpenseSubmitter = "ExpenseSubmitter"; // This role can be granted to users only.
+            public const string ExpenseApprover = "ExpenseApprover"; // This role can be granted to users only.
             public const string ExpenseReadWriteAll = "Expense.ReadWrite.All"; // This role can be granted to applications only (as an application permission).
         }
 
@@ -22,6 +22,7 @@ namespace Expenses.Common
             public const string PreferredUsername = "preferred_username";
             public const string ObjectId = "oid";
             public const string TenantId = "tid";
+            public const string Name = "name";
             public const string Roles = "roles";
             public const string Scope = "scp";
             public const string AccountId = "aid";
@@ -45,7 +46,9 @@ namespace Expenses.Common
         {
             public const string ReadMyIdentity = nameof(ReadMyIdentity);
             public const string ReadMyExpenses = nameof(ReadMyExpenses);
+            public const string ReadAllExpenses = nameof(ReadAllExpenses);
             public const string ReadWriteMyExpenses = nameof(ReadWriteMyExpenses);
+            public const string ApproveExpenses = nameof(ApproveExpenses);
         }
     }
 }

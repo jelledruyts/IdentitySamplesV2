@@ -1,0 +1,13 @@
+@model Expense
+@{
+    ViewData["Title"] = "Create Expense";
+}
+<h1>@ViewBag.Title</h1>
+<div asp-validation-summary="All" class="text-danger"></div>
+<form asp-controller="Expenses" asp-action="Create" method="POST" class="form-inline">
+    <label for="purpose" class="mr-2">Purpose</label>
+    <input type="text" class="form-control mr-2" id="purpose" name="purpose" value="@Model.Purpose">
+    <label for="amount" class="mr-2">Amount</label>
+    <input type="number" class="form-control mr-2" style="width: 4em" id="amount" name="amount" value="@Model.Amount">
+    <button type="submit" class="btn btn-primary">Submit</button>
+</form>

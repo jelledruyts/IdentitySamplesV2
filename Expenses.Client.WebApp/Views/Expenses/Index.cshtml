@@ -1,0 +1,37 @@
+@model IList<Expense>
+@{
+    ViewData["Title"] = "My Expenses";
+}
+<h1>@ViewBag.Title</h1>
+@if (!Model.Any()) {
+    <p class="lead">You haven't submitted any expenses yet.</p>
+} else {
+    <table class="table table-striped">
+        <thead class="thead-dark">
+            <tr>
+                <th class="w-50">Purpose</th>
+                <th class="w-auto">Amount</th>
+                <th class="w-25">Time (UTC)</th>
+                <th class="w-auto">Status</th>
+                <th class="w-auto">Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var expense in Model.OrderByDescending(e => e.CreatedDate))
+            {
+                <tr>
+                    <td>@expense.Purpose</td>
+                    <td>@expense.Amount.ToString("c")</td>
+                    <td>@expense.CreatedDate.ToString("g")</td>
+                    <td>@(expense.IsApproved ? "Approved" : "Submitted")</td>
+                    <td>
+                        @if (!expense.IsApproved)
+                        {
+                            <form asp-controller="Expenses" asp-action="Delete"><input type="hidden" name="id" value="@expense.Id"><button type="submit" class="btn btn-danger">Delete</button></form>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}

@@ -35,6 +35,9 @@ namespace Expenses.Api
                 .AddAzureADBearer(options => Configuration.Bind("AzureAd", options));
             services.Configure<JwtBearerOptions>(AzureADDefaults.JwtBearerAuthenticationScheme, options =>
             {
+                // The Azure AD v2.0 endpoint returns the display name in the "name" claim for access tokens.
+                options.TokenValidationParameters.NameClaimType = Constants.ClaimTypes.Name;
+
                 // Azure AD returns the roles in the "roles" claims (if any).
                 options.TokenValidationParameters.RoleClaimType = Constants.ClaimTypes.Roles;
 
@@ -52,7 +55,7 @@ namespace Expenses.Api
                 // Define the "ReadMyIdentity" authorization policy.
                 options.AddPolicy(Constants.AuthorizationPolicies.ReadMyIdentity, b =>
                 {
-                    // Require the "Identity.Read scope.
+                    // Require the "Identity.Read" scope.
                     b.RequireClaim(Constants.ClaimTypes.Scope, Constants.Scopes.IdentityRead);
                 });
                 // Define the "ReadMyExpenses" authorization policy.
@@ -61,11 +64,29 @@ namespace Expenses.Api
                     // Require the "Expense.Read" and/or "Expense.ReadWrite" scope.
                     b.RequireClaim(Constants.ClaimTypes.Scope, Constants.Scopes.ExpensesRead, Constants.Scopes.ExpensesReadWrite);
                 });
+                // Define the "ReadAllExpenses" authorization policy.
+                options.AddPolicy(Constants.AuthorizationPolicies.ReadAllExpenses, b =>
+                {
+                    // Require the "Expense.Read.All" scope.
+                    b.RequireClaim(Constants.ClaimTypes.Scope, Constants.Scopes.ExpensesReadAll);
+
+                    // Require the "ExpenseApprover" role.
+                    b.RequireRole(Constants.Roles.ExpenseApprover);
+                });
                 // Define the "ReadWriteMyExpenses" authorization policy.
                 options.AddPolicy(Constants.AuthorizationPolicies.ReadWriteMyExpenses, b =>
                 {
                     // Require the "Expense.ReadWrite" scope.
                     b.RequireClaim(Constants.ClaimTypes.Scope, Constants.Scopes.ExpensesReadWrite);
+
+                    // Require the "ExpenseSubmitter" role.
+                    b.RequireRole(Constants.Roles.ExpenseSubmitter);
+                });
+                // Define the "ApproveExpenses" authorization policy.
+                options.AddPolicy(Constants.AuthorizationPolicies.ApproveExpenses, b =>
+                {
+                    // Require the "ExpenseApprover" role.
+                    b.RequireRole(Constants.Roles.ExpenseApprover);
                 });
             });
 
