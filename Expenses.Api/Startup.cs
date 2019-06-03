@@ -1,4 +1,5 @@
-﻿using System.IdentityModel.Tokens.Jwt;
+﻿using System;
+using System.IdentityModel.Tokens.Jwt;
 using Expenses.Api.Infrastructure;
 using Expenses.Common;
 using Microsoft.AspNetCore.Authentication;
@@ -26,6 +27,8 @@ namespace Expenses.Api
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddHttpClient();
+
             // Don't map any standard OpenID Connect claims to Microsoft-specific claims.
             // See https://leastprivilege.com/2017/11/15/missing-claims-in-the-asp-net-core-2-openid-connect-handler/
             JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
@@ -47,6 +50,9 @@ namespace Expenses.Api
                      Configuration["AzureAd:ClientId"],
                      Configuration["App:AppIdUri"] // Azure AD v2.0 issues access tokens with the App ID URI as the audience
                 };
+
+                // Store the incoming tokens for later use (i.e. for the On-Behalf-Of flow).
+                options.SaveToken = true;
             });
 
             // Define authorization policies that can be applied to API's.

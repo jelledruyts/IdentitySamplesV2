@@ -25,6 +25,7 @@ namespace Expenses.Client.WebApp.Controllers
         [Route("[controller]/[action]")]
         public async Task<IActionResult> Identity()
         {
+            // Get identity information from related applications (i.e. the back-end Web API).
             var relatedApplicationIdentities = new List<IdentityInfo>();
             if (this.User.Identity.IsAuthenticated)
             {
@@ -43,8 +44,7 @@ namespace Expenses.Client.WebApp.Controllers
                     response.EnsureSuccessStatusCode();
 
                     // Deserialize the response into an IdentityInfo instance.
-                    var apiIdentityInfoValue = await response.Content.ReadAsStringAsync();
-                    var apiIdentityInfo = JsonConvert.DeserializeObject<IdentityInfo>(apiIdentityInfoValue);
+                    var apiIdentityInfo = await response.Content.ReadAsAsync<IdentityInfo>();
                     relatedApplicationIdentities.Add(apiIdentityInfo);
                 }
                 catch (Exception exc)

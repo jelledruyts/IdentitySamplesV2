@@ -41,12 +41,11 @@ namespace Expenses.Client.WebApp.Controllers
             var response = await client.GetAsync("api/expenses");
             if (!response.IsSuccessStatusCode)
             {
-                return RedirectToAction("Error", "Home", new { Message = await response.Content.ReadAsStringAsync() });
+                return await this.RedirectToError(response);
             }
 
             // Deserialize the response into an expense list.
-            var expensesValue = await response.Content.ReadAsStringAsync();
-            var expenses = JsonConvert.DeserializeObject<IList<Expense>>(expensesValue);
+            var expenses = await response.Content.ReadAsAsync<IList<Expense>>();
 
             return View(expenses);
         }
@@ -132,8 +131,7 @@ namespace Expenses.Client.WebApp.Controllers
             }
 
             // Deserialize the response into an expense list.
-            var expensesValue = await response.Content.ReadAsStringAsync();
-            var expenses = JsonConvert.DeserializeObject<IList<Expense>>(expensesValue);
+            var expenses = await response.Content.ReadAsAsync<IList<Expense>>();
 
             return View(expenses);
         }

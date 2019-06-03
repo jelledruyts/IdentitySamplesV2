@@ -83,9 +83,9 @@ namespace Expenses.Common.Models
 
         private static string GetRemark(Claim claim)
         {
-            // [NOTE] Certain claims can be interpreted to more meaningful information.
-            // See https://msdn.microsoft.com/en-us/library/azure/dn195587.aspx and
-            // https://docs.microsoft.com/en-us/azure/active-directory/develop/active-directory-token-and-claims among others.
+            // NOTE: Certain claims can be interpreted to provide more meaningful information.
+            // See https://docs.microsoft.com/en-us/azure/active-directory/develop/id-tokens and
+            // https://docs.microsoft.com/en-us/azure/active-directory/develop/access-tokens among others.
             switch (claim.Type.ToLowerInvariant())
             {
                 case "aud":

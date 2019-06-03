@@ -185,8 +185,7 @@ namespace Expenses.Client.WebApp
                         // Add the roles that the user was granted in the Web API to the roles available for this client application.
                         // By adding it to the claims of the identity, they will be serialized into the authentication cookie
                         // and made available in all subsequent calls automatically.
-                        var apiRolesValue = await response.Content.ReadAsStringAsync();
-                        var apiRoles = JsonConvert.DeserializeObject<string[]>(apiRolesValue);
+                        var apiRoles = await response.Content.ReadAsAsync<string[]>();
                         identity.AddClaims(apiRoles.Select(r => new Claim(Constants.ClaimTypes.Roles, r)));
                     }
                     catch (Exception exc)

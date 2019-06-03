@@ -18,7 +18,10 @@ namespace Expenses.Api.Infrastructure
     {
         public Task<ClaimsPrincipal> TransformAsync(ClaimsPrincipal principal)
         {
-            var scopes = principal.FindAll(Constants.ClaimTypes.Scope).SelectMany(c => c.Value.Split(' ', StringSplitOptions.RemoveEmptyEntries)).ToList();
+            // Find all "scp" claims, split their values by spaces and then take the ones that aren't yet on the principal individually.
+            var scopes = principal.FindAll(Constants.ClaimTypes.Scope).SelectMany(c => c.Value.Split(' ', StringSplitOptions.RemoveEmptyEntries)).Where(s => !principal.HasClaim(Constants.ClaimTypes.Scope, s)).ToList();
+
+            // Add all new "scp" claims to the principal's identity.
             ((ClaimsIdentity)principal.Identity).AddClaims(scopes.Select(s => new Claim(Constants.ClaimTypes.Scope, s)));
             return Task.FromResult(principal);
         }
