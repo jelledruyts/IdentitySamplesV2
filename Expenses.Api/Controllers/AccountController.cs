@@ -41,7 +41,6 @@ namespace Expenses.Api.Controllers
                 // Call the Microsoft Graph on behalf of the end user to retrieve additional information about the user.
                 var options = new ConfidentialClientApplicationOptions();
                 this.configuration.Bind("AzureAd", options);
-                options.Instance = null; // This prevents a bug with MSAL where it doesn't construct the proper OIDC metadata URL, see https://github.com/AzureAD/microsoft-authentication-library-for-dotnet/issues/1196.
                 var confidentialClientApplication = ConfidentialClientApplicationBuilder.CreateWithApplicationOptions(options).Build();
 
                 // Retrieve the original access token that was sent as the incoming request.
