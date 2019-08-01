@@ -68,22 +68,32 @@ $WebApiRegistration = New-AzureADApplication `
     -AppRoles @( `
         [Microsoft.Open.AzureAD.Model.AppRole]@{ `
             AllowedMemberTypes = @("Application"); `
-            Description = "Read and write expenses for all users"; `            DisplayName = "Expense.ReadWrite.All"; `            Id = [Guid]::NewGuid(); `            Value = "Expense.ReadWrite.All"; `
+            Description = "Read and write expenses for all users"; `
+            DisplayName = "Expense.ReadWrite.All"; `
+            Id = [Guid]::NewGuid(); `
+            Value = "Expense.ReadWrite.All"; `
         }, `
         [Microsoft.Open.AzureAD.Model.AppRole]@{ `
             AllowedMemberTypes = @("User"); `
-            Description = "Expense approvers can approve submitted expenses"; `            DisplayName = "Expense Approver"; `            Id = [Guid]::NewGuid(); `            Value = "ExpenseApprover"; `
+            Description = "Expense approvers can approve submitted expenses"; `
+            DisplayName = "Expense Approver"; `
+            Id = [Guid]::NewGuid(); `
+            Value = "ExpenseApprover"; `
         }, `
         [Microsoft.Open.AzureAD.Model.AppRole]@{ `
             AllowedMemberTypes = @("User"); `
-            Description = "Expense submitters can create and edit expenses"; `            DisplayName = "Expense Submitter"; `            Id = [Guid]::NewGuid(); `            Value = "ExpenseSubmitter"; `
+            Description = "Expense submitters can create and edit expenses"; `
+            DisplayName = "Expense Submitter"; `
+            Id = [Guid]::NewGuid(); `
+            Value = "ExpenseSubmitter"; `
         } `
     ) `
     -Oauth2Permissions @( `
         [Microsoft.Open.AzureAD.Model.Oauth2Permission]@{ `
             AdminConsentDescription = "Allows the app to read expenses for all users."; `
             AdminConsentDisplayName = "Read expenses for all users"; `
-            Id = [Guid]::NewGuid(); `            "Type" = "Admin"; `
+            Id = [Guid]::NewGuid(); `
+            "Type" = "Admin"; `
             UserConsentDescription = "Allows the app to read expenses for all users."; `
             UserConsentDisplayName = "Read expenses for all users"; `
             Value = "Expenses.Read.All"; `
@@ -91,7 +101,8 @@ $WebApiRegistration = New-AzureADApplication `
         [Microsoft.Open.AzureAD.Model.Oauth2Permission]@{ `
             AdminConsentDescription = "Allows the app to get information about the signed-in user's identity"; `
             AdminConsentDisplayName = "Read user identity"; `
-            Id = [Guid]::NewGuid(); `            "Type" = "User"; `
+            Id = [Guid]::NewGuid(); `
+            "Type" = "User"; `
             UserConsentDescription = "Allows the app to get information about your identity."; `
             UserConsentDisplayName = "Read your identity"; `
             Value = "Identity.Read"; `
@@ -99,7 +110,8 @@ $WebApiRegistration = New-AzureADApplication `
         [Microsoft.Open.AzureAD.Model.Oauth2Permission]@{ `
             AdminConsentDescription = "Allows the app to read and write the signed-in user's expenses."; `
             AdminConsentDisplayName = "Read and write user expenses"; `
-            Id = [Guid]::NewGuid(); `            "Type" = "User"; `
+            Id = [Guid]::NewGuid(); `
+            "Type" = "User"; `
             UserConsentDescription = "Allows the app to read and write your expenses."; `
             UserConsentDisplayName = "Read and write your expenses"; `
             Value = "Expenses.ReadWrite"; `
@@ -107,7 +119,8 @@ $WebApiRegistration = New-AzureADApplication `
         [Microsoft.Open.AzureAD.Model.Oauth2Permission]@{ `
             AdminConsentDescription = "Allows the app to read the signed-in user's expenses."; `
             AdminConsentDisplayName = "Read user expenses"; `
-            Id = [Guid]::NewGuid(); `            "Type" = "User"; `
+            Id = [Guid]::NewGuid(); `
+            "Type" = "User"; `
             UserConsentDescription = "Allows the app to read your expenses."; `
             UserConsentDisplayName = "Read your expenses"; `
             Value = "Expenses.Read"; `
