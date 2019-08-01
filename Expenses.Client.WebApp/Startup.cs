@@ -19,7 +19,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
-using Newtonsoft.Json;
 
 namespace Expenses.Client.WebApp
 {
@@ -80,7 +79,10 @@ namespace Expenses.Client.WebApp
                 options.ResponseType = OpenIdConnectResponseType.CodeIdToken;
 
                 // Define the API scopes that are requested by default as part of the sign-in so that the user can consent to them up-front.
-                var defaultApiScopes = new[] { tokenProvider.GetFullyQualifiedScope(Constants.Placeholders.ExpensesApiScopeIdentityRead) };
+                // This uses the "/.default" scope to request all statically declared scopes, including those of downstream API's that have
+                // the "knownClientApplications" set to the current application's Client ID.
+                // See https://docs.microsoft.com/en-us/azure/active-directory/develop/v2-oauth2-on-behalf-of-flow#gaining-consent-for-the-middle-tier-application
+                var defaultApiScopes = new[] { tokenProvider.GetFullyQualifiedScope(Constants.Placeholders.ExpensesApiScopeDefault) };
 
                 // Request the scopes from the API as part of the authorization code flow.
                 foreach (var apiScope in defaultApiScopes)
@@ -256,7 +258,8 @@ namespace Expenses.Client.WebApp
                 .SetCompatibilityVersion(CompatibilityVersion.Version_2_2)
                 .AddMvcOptions(options =>
                 {
-                    options.Filters.Add(new MsalUiRequiredExceptionFilterAttribute());
+                    // Add a global filter that triggers interactive sign-ins on certain exceptions.
+                    options.Filters.Add(new InteractiveSignInRequiredExceptionFilterAttribute());
                 });
             services.AddRouting(options => { options.LowercaseUrls = true; });
         }

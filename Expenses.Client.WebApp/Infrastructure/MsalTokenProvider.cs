@@ -40,7 +40,10 @@ namespace Expenses.Client.WebApp.Infrastructure
         public async Task<AuthenticationResult> RedeemAuthorizationCodeAsync(HttpContext httpContext, string authorizationCode, IEnumerable<string> scopes)
         {
             var confidentialClientApplication = GetConfidentialClientApplication(httpContext, httpContext.User);
-            return await confidentialClientApplication.AcquireTokenByAuthorizationCode(GetFullyQualifiedScopes(scopes), authorizationCode).ExecuteAsync();
+            var fullyQualifiedScopes = GetFullyQualifiedScopes(scopes);
+            var token = await confidentialClientApplication.AcquireTokenByAuthorizationCode(fullyQualifiedScopes, authorizationCode).ExecuteAsync();
+            ValidateScopes(token, fullyQualifiedScopes);
+            return token;
         }
 
         public async Task<AuthenticationResult> GetTokenForUserAsync(HttpContext httpContext, ClaimsPrincipal user, IEnumerable<string> scopes)
@@ -51,7 +54,21 @@ namespace Expenses.Client.WebApp.Infrastructure
             }
             var confidentialClientApplication = GetConfidentialClientApplication(httpContext, user);
             var userAccount = await confidentialClientApplication.GetAccountAsync(user.GetAccountId());
-            return await confidentialClientApplication.AcquireTokenSilent(GetFullyQualifiedScopes(scopes), userAccount).ExecuteAsync();
+            var fullyQualifiedScopes = GetFullyQualifiedScopes(scopes);
+            var token = await confidentialClientApplication.AcquireTokenSilent(fullyQualifiedScopes, userAccount).ExecuteAsync();
+            ValidateScopes(token, fullyQualifiedScopes);
+            return token;
+        }
+
+        private void ValidateScopes(AuthenticationResult token, IEnumerable<string> scopes)
+        {
+            // Even though the scopes are requested, they may not always be returned from a refresh token flow if the user
+            // hasn't consented to a new scope yet; in that case, trigger a new interactive consent flow.
+            if (!scopes.All(scope => token.Scopes.Any(s => string.Equals(s, scope, StringComparison.OrdinalIgnoreCase))))
+            {
+                // Throw an MsalUiRequiredException with a custom error code to signal to the exception filter that it should trigger.
+                throw new MsalUiRequiredException(InteractiveSignInRequiredExceptionFilterAttribute.MsalUiRequiredExceptionErrorCodeRequestedScopeMissing, null);
+            }
         }
 
         public async Task RemoveUserAsync(HttpContext httpContext, ClaimsPrincipal user)

@@ -24,7 +24,7 @@ namespace Expenses.Client.WebApp.Controllers
         }
 
         [Authorize(Constants.AuthorizationPolicies.ReadMyExpenses)]
-        [MsalUiRequiredExceptionFilter(Scopes = new[] { Constants.Placeholders.ExpensesApiScopeExpensesRead })]
+        [InteractiveSignInRequiredExceptionFilter(Scopes = new[] { Constants.Placeholders.ExpensesApiScopeExpensesRead })]
         [Route("[controller]")]
         public async Task<IActionResult> Index()
         {
@@ -58,7 +58,7 @@ namespace Expenses.Client.WebApp.Controllers
         }
 
         [Authorize(Constants.AuthorizationPolicies.ReadWriteMyExpenses)]
-        [MsalUiRequiredExceptionFilter(Scopes = new[] { Constants.Placeholders.ExpensesApiScopeExpensesReadWrite })]
+        [InteractiveSignInRequiredExceptionFilter(Scopes = new[] { Constants.Placeholders.ExpensesApiScopeExpensesReadWrite })]
         [Route("[controller]/[action]")]
         [HttpPost]
         public async Task<IActionResult> Create(Expense expense)
@@ -86,7 +86,7 @@ namespace Expenses.Client.WebApp.Controllers
         }
 
         [Authorize(Constants.AuthorizationPolicies.ReadWriteMyExpenses)]
-        [MsalUiRequiredExceptionFilter(Scopes = new[] { Constants.Placeholders.ExpensesApiScopeExpensesReadWrite })]
+        [InteractiveSignInRequiredExceptionFilter(Scopes = new[] { Constants.Placeholders.ExpensesApiScopeExpensesReadWrite })]
         [Route("[controller]/[action]")]
         [HttpPost]
         public async Task<IActionResult> Delete(Guid id)
@@ -110,7 +110,7 @@ namespace Expenses.Client.WebApp.Controllers
         }
 
         [Authorize(Constants.AuthorizationPolicies.ApproveExpenses)]
-        [MsalUiRequiredExceptionFilter(Scopes = new[] { Constants.Placeholders.ExpensesApiScopeExpensesReadAll })]
+        [InteractiveSignInRequiredExceptionFilter(Scopes = new[] { Constants.Placeholders.ExpensesApiScopeExpensesReadAll })]
         [Route("[controller]/[action]")]
         public async Task<IActionResult> Approve()
         {
@@ -137,7 +137,7 @@ namespace Expenses.Client.WebApp.Controllers
         }
 
         [Authorize(Constants.AuthorizationPolicies.ApproveExpenses)]
-        [MsalUiRequiredExceptionFilter(Scopes = new[] { Constants.Placeholders.ExpensesApiScopeExpensesReadWrite })]
+        [InteractiveSignInRequiredExceptionFilter(Scopes = new[] { Constants.Placeholders.ExpensesApiScopeExpensesReadWrite })]
         [Route("[controller]/[action]")]
         [HttpPost]
         public async Task<IActionResult> Approve(Expense value)

@@ -11,8 +11,9 @@ using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 
 namespace Expenses.Client.WebApp.Infrastructure
 {
-    public class MsalUiRequiredExceptionFilterAttribute : ExceptionFilterAttribute
+    public class InteractiveSignInRequiredExceptionFilterAttribute : ExceptionFilterAttribute
     {
+        public const string MsalUiRequiredExceptionErrorCodeRequestedScopeMissing = "requested_scope_missing"; // A custom error code to signal that a requested scope was not granted (likely because it was not previously consented to).
         public string[] Scopes { get; set; }
 
         public override void OnException(ExceptionContext context)
@@ -55,6 +56,12 @@ namespace Expenses.Client.WebApp.Infrastructure
                 return false;
             }
 
+            if (msalUiRequiredException.ErrorCode == MsalUiRequiredExceptionErrorCodeRequestedScopeMissing)
+            {
+                // A custom error code was used to explicitly signal that an interactive flow should be triggered.
+                return true;
+            }
+
             if (msalUiRequiredException.ErrorCode == MsalError.UserNullError)
             {
                 // If the error code is "user_null", this indicates a cache problem.
@@ -70,8 +77,8 @@ namespace Expenses.Client.WebApp.Infrastructure
                 && msalUiRequiredException.ResponseBody.Contains("consent_required", StringComparison.OrdinalIgnoreCase))
             {
                 // The grant was invalid with a "suberror" indicating that consent is required.
-                // This is typically the case with incremental consent, where the refresh token is used
-                // to get an access token for a permission that was not yet consented to.
+                // This is typically the case with incremental consent, when requesteing an access token
+                // for a permission that was not yet consented to.
                 return true;
             }
 

@@ -8,6 +8,7 @@ namespace Expenses.Common
             public const string ExpensesRead = "Expenses.Read"; // This scope can be consented to by any user, as it allows access to their own data.
             public const string ExpensesReadWrite = "Expenses.ReadWrite"; // This scope can be consented to by any user, as it allows access to their own data.
             public const string ExpensesReadAll = "Expenses.Read.All"; // This scope can only be consented to by admins, as it allows access to all user's data.
+            public const string Default = ".default"; // This scope is used to request all statically declared scopes, including those of downstream API's that have the "knownClientApplications" set to the current App ID (see https://docs.microsoft.com/en-us/azure/active-directory/develop/v2-oauth2-on-behalf-of-flow#gaining-consent-for-the-middle-tier-application).
         }
 
         public static class Roles
@@ -40,6 +41,7 @@ namespace Expenses.Common
             public const string ExpensesApiScopeExpensesRead = ExpensesApiAppIdUri + "/" + Scopes.ExpensesRead;
             public const string ExpensesApiScopeExpensesReadWrite = ExpensesApiAppIdUri + "/" + Scopes.ExpensesReadWrite;
             public const string ExpensesApiScopeExpensesReadAll = ExpensesApiAppIdUri + "/" + Scopes.ExpensesReadAll;
+            public const string ExpensesApiScopeDefault = ExpensesApiAppIdUri + "/" + Scopes.Default;
         }
 
         public static class AuthorizationPolicies
