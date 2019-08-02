@@ -7,7 +7,6 @@ using Expenses.Client.WebApp.Infrastructure;
 using Expenses.Common;
 using Expenses.Common.Models;
 using Microsoft.AspNetCore.Mvc;
-using Newtonsoft.Json;
 
 namespace Expenses.Client.WebApp.Controllers
 {

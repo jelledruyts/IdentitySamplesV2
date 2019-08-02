@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-
 namespace Expenses.Common.Models
 {
     /// <summary>

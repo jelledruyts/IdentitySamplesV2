@@ -1,5 +1,4 @@
-﻿using System;
-using System.IdentityModel.Tokens.Jwt;
+﻿using System.IdentityModel.Tokens.Jwt;
 using Expenses.Api.Infrastructure;
 using Expenses.Common;
 using Microsoft.AspNetCore.Authentication;

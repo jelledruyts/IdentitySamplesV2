@@ -12,7 +12,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Identity.Client;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace Expenses.Api.Controllers

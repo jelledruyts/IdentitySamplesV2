@@ -158,7 +158,7 @@ namespace Expenses.Client.WebApp
                     // We use it here to retrieve role information for the user, as defined on the back-end Web API, so that
                     // the roles the user has on the back-end can also be used to modify the UI the user will see (e.g. to disable
                     // certain actions the user is not allowed to perform anyway based on their role in the back-end Web API).
-                    // NOTE: Technically, we could decode the access token for the back-end Web API and get  the role claims
+                    // NOTE: Technically, we could decode the access token for the back-end Web API and get the role claims
                     // from there (as they are emitted as part of the token), but that would violate the principle of access
                     // tokens being only intended for the rightful audience.
                     // See http://www.cloudidentity.com/blog/2018/04/20/clients-shouldnt-peek-inside-access-tokens/.
