@@ -20,7 +20,7 @@ For other samples, see [Microsoft identity platform code samples (v2.0 endpoint)
 
 This sample demonstrates an expense reporting solution which users can access through client applications that interact with a back-end API.
 
-The core functionality is implemented in the Expenses API, which exposes a number of operations that are secured via OAuth 2.0 bearer tokens. Client applications sign the user in via OpenID Connect and then call into the Expenses API to provide the user experience. The Expenses API in turn can call into the Microsoft Graph API to get additional details of the user (to demonstrate a multi-tier application using the delegated OAuth 2.0 On-Behalf-Of flow).
+The core functionality is implemented in the **Expenses API**, which exposes a number of operations that are secured via OAuth 2.0 bearer tokens. A **client web application** signs the user in via OpenID Connect and then calls into the Expenses API to provide the user experience to create and approve expenses. There's also a **payout processor application** (a console app simulating a daemon service or background job) to mark approved expenses as paid out in the Expenses API, using the OAuth 2.0 Client Credentials flow. The Expenses API in turn calls into the **Microsoft Graph API** to get additional details of the signed-in user (to demonstrate a multi-tier application using the delegated OAuth 2.0 On-Behalf-Of flow).
 
 ## Permission Model
 
@@ -32,7 +32,9 @@ Think of **scopes** as being something the user "owns" and the app wants (e.g. a
 
 **Roles** on the other hand are something the app (developer or administrator) grants to the user, not something the user "owns" or would want to refuse (e.g. being a contributor on an Azure resource group, a payroll administrator for the company's HR system, or an approver for expense reports).
 
-Oversimplifying this a bit, you could say that _scopes are permissions that the app gets from the user_, whereas _roles are permissions that the user gets from the app_.
+Oversimplifying this a bit, you could say that **scopes are permissions that the app gets from the user**, whereas **roles are permissions that the user gets from the app**.
+
+> **Note:** In Azure AD, application permissions (i.e. not delegated permissions on behalf of a user, but permissions representing what the application itself can do) are always modeled as _roles_, not _scopes_.
 
 ### Scopes
 
@@ -55,15 +57,17 @@ The web application also uses the dynamic consent capability of the Microsoft id
 
 The Expenses API publishes the following roles, which can be assigned to users or applications:
 
-| Role                    | Who can be assigned | Description                                      |
-| ----------------------- | ------------------- | ------------------------------------------------ |
-| `ExpenseSubmitter`      | Users               | Expense submitters can create and edit expenses  |
-| `ExpenseApprover`       | Users               | Expense approvers can approve submitted expenses |
-| `Expense.ReadWrite.All` | Applications        | Read and write expenses for all users            |
+| Role                     | Who can be assigned | Description                                      |
+| ------------------------ | ------------------- | ------------------------------------------------ |
+| `ExpenseSubmitter`       | Users               | Expense submitters can create and edit expenses  |
+| `ExpenseApprover`        | Users               | Expense approvers can approve submitted expenses |
+| `Expenses.ReadWrite.All` | Applications        | Read and write expenses for all users            |
 
-The `Expense.ReadWrite.All` role is not currently used by any application, but it could be assigned to a back-end job for example which periodically pays out expenses and marks them as complete. For that, it would require the necessary scopes as above, but as an additional safety measure the `Expense.ReadWrite.All` role could also be required. Modeling the dependencies between applications as roles in this way also makes it easier to discover which applications have which permissions in other applications.
+The `ExpenseSubmitter` and `ExpenseApprover` roles are used to secure actions that users are allowed to perform.
 
-> **Note:** in this sample, the client applications retrieve the user's roles from the Expenses API after sign-in. This means the user is not assigned any roles on the client application directly but only on the API. The roles are retrieved from the API merely to reflect the user's permissions properly in the user experience, e.g. to disable certain functionality that would fail anyway if a particular API operation were called from the client application. Even though the client application uses the user's roles as seen by the API to improve the user experience, the end responsibility around safeguarding operations is still always maintained in the API.
+The `Expenses.ReadWrite.All` role is used by the payout processor application which checks approved expenses and marks them as paid out. Since application permissions cannot be modeled as scopes, this sensitive permission is secured by the `Expenses.ReadWrite.All` role (which by definition requires admin consent, as application permissions can only be granted by admins). Modeling the dependencies between applications as roles in this way also makes it easier to discover which applications have which permissions in other applications.
+
+> **Note:** In this sample, the client web application retrieves the user's roles from the Expenses API after sign-in. This means the user is not assigned any roles on the client application directly but only on the API. The roles are retrieved from the API merely to reflect the user's permissions properly in the user experience, e.g. to disable certain functionality that would fail anyway if a particular API operation were called from the client application. Even though the client application uses the user's roles as seen by the API to improve the user experience, the end responsibility around safeguarding operations is still always maintained in the API.
 
 ## Setup
 

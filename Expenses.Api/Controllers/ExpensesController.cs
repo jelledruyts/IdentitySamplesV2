@@ -60,7 +60,7 @@ namespace Expenses.Api.Controllers
             value.CreatedDate = DateTimeOffset.UtcNow;
             value.CreatedUserId = this.User.GetUserId();
             value.CreatedUserDisplayName = this.User.Identity.Name;
-            value.IsApproved = false; // Ensure nobody can create an expense that is already approved.
+            value.Status = ExpenseStatus.Submitted; // Ensure nobody can create an expense that is already approved or paid.
             database.Add(value);
         }
 
@@ -73,23 +73,39 @@ namespace Expenses.Api.Controllers
                 return NotFound();
             }
 
-            if (!expense.IsApproved && value.IsApproved)
+            if (expense.Status != value.Status)
             {
-                // The expense is being approved, apply 3 business rules.
-                // 1: The current user must have the "ExpenseApprover" role.
-                if (!User.IsInRole(Constants.Roles.ExpenseApprover))
+                // The expense status is being changed, apply strict business rules before making changes.
+                if (value.Status == ExpenseStatus.Approved)
                 {
-                    return Unauthorized($"You must have the \"{Constants.Roles.ExpenseApprover}\" role.");
-                }
+                    // The expense is being approved, apply 3 business rules.
+                    // 1: The current user must have the "ExpenseApprover" role.
+                    if (!User.IsInRole(Constants.Roles.ExpenseApprover))
+                    {
+                        return Unauthorized($"You must have the \"{Constants.Roles.ExpenseApprover}\" role.");
+                    }
 
-                // 2: A user cannot approve their own expenses.
-                if (expense.CreatedUserId == this.User.GetUserId())
+                    // 2: A user cannot approve their own expenses.
+                    if (expense.CreatedUserId == this.User.GetUserId())
+                    {
+                        return Unauthorized("You are not allowed to approve your own expenses.");
+                    }
+
+                    // 3: No other fields may be changed during expense approval.
+                    expense.Status = ExpenseStatus.Approved;
+                }
+                else if (value.Status == ExpenseStatus.Paid)
                 {
-                    return Unauthorized("You are not allowed to approve your own expenses.");
-                }
+                    // The expense is marked as paid out, apply 2 business rules.
+                    // 1: The current user must have the "Expenses.ReadWrite.All" role.
+                    if (!User.IsInRole(Constants.Roles.ExpensesReadWriteAll))
+                    {
+                        return Unauthorized($"You must have the \"{Constants.Roles.ExpensesReadWriteAll}\" role.");
+                    }
 
-                // 3: No other fields may be changed during expense approval.
-                expense.IsApproved = true;
+                    // 2: No other fields may be changed during expense payment.
+                    expense.Status = ExpenseStatus.Paid;
+                }
             }
             else
             {
@@ -107,10 +123,10 @@ namespace Expenses.Api.Controllers
                     return Unauthorized("You can only update your own expenses.");
                 }
 
-                // 3: Approved expenses cannot be changed.
-                if (expense.IsApproved)
+                // 3: Only submitted expenses can still be changed.
+                if (expense.Status != ExpenseStatus.Submitted)
                 {
-                    return Unauthorized("You cannot update approved expenses.");
+                    return Unauthorized("You can only update submitted expenses.");
                 }
 
                 // 4: Only certain fields may be changed (e.g. prevent that users modify the created user or time).
@@ -133,9 +149,9 @@ namespace Expenses.Api.Controllers
             {
                 return Unauthorized("You can only delete your own expenses.");
             }
-            if (expense.IsApproved)
+            if (expense.Status != ExpenseStatus.Submitted)
             {
-                return Unauthorized("You cannot delete approved expenses.");
+                return Unauthorized("You can only delete submitted expenses.");
             }
             database.Remove(expense);
             return Ok();

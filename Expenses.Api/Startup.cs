@@ -1,4 +1,5 @@
 ﻿using System.IdentityModel.Tokens.Jwt;
+using System.Linq;
 using Expenses.Api.Infrastructure;
 using Expenses.Common;
 using Microsoft.AspNetCore.Authentication;
@@ -66,32 +67,27 @@ namespace Expenses.Api
                 // Define the "ReadMyExpenses" authorization policy.
                 options.AddPolicy(Constants.AuthorizationPolicies.ReadMyExpenses, b =>
                 {
-                    // Require the "Expense.Read" and/or "Expense.ReadWrite" scope.
+                    // Require the "Expenses.Read" and/or "Expenses.ReadWrite" scope.
                     b.RequireClaim(Constants.ClaimTypes.Scope, Constants.Scopes.ExpensesRead, Constants.Scopes.ExpensesReadWrite);
                 });
                 // Define the "ReadAllExpenses" authorization policy.
                 options.AddPolicy(Constants.AuthorizationPolicies.ReadAllExpenses, b =>
                 {
-                    // Require the "Expense.Read.All" scope.
-                    b.RequireClaim(Constants.ClaimTypes.Scope, Constants.Scopes.ExpensesReadAll);
-
-                    // Require the "ExpenseApprover" role.
-                    b.RequireRole(Constants.Roles.ExpenseApprover);
+                    b.RequireAssertion(context =>
+                        // For applications, require the "Expenses.ReadWrite.All" role.
+                        context.User.IsInRole(Constants.Roles.ExpensesReadWriteAll)
+                        // For users, require the "ExpenseApprover" role and the "Expenses.Read.All" scope.
+                        || (context.User.IsInRole(Constants.Roles.ExpenseApprover) && context.User.HasClaim(Constants.ClaimTypes.Scope, Constants.Scopes.ExpensesReadAll))
+                    );
                 });
                 // Define the "ReadWriteMyExpenses" authorization policy.
                 options.AddPolicy(Constants.AuthorizationPolicies.ReadWriteMyExpenses, b =>
                 {
-                    // Require the "Expense.ReadWrite" scope.
+                    // Require the "Expenses.ReadWrite" scope.
                     b.RequireClaim(Constants.ClaimTypes.Scope, Constants.Scopes.ExpensesReadWrite);
 
                     // Require the "ExpenseSubmitter" role.
                     b.RequireRole(Constants.Roles.ExpenseSubmitter);
-                });
-                // Define the "ApproveExpenses" authorization policy.
-                options.AddPolicy(Constants.AuthorizationPolicies.ApproveExpenses, b =>
-                {
-                    // Require the "ExpenseApprover" role.
-                    b.RequireRole(Constants.Roles.ExpenseApprover);
                 });
             });
 
@@ -113,9 +109,9 @@ namespace Expenses.Api
                     var baselinePolicy = new AuthorizationPolicyBuilder()
                         // An authenticated user (i.e. an incoming JWT bearer token) is always required.
                         .RequireAuthenticatedUser()
-                        // A "scope" claim is also required, if not any application could simply request
-                        // a valid access token to call into this API without being authorized.
-                        .RequireClaim(Constants.ClaimTypes.Scope)
+                        // A "scope" or "role" claim is also required, if not any application could simply request
+                        // a valid access token to call into this API without being truly authorized.
+                        .RequireAssertion(context => context.User.Claims.Any(c => c.Type == Constants.ClaimTypes.Scope || c.Type == Constants.ClaimTypes.Roles))
                         .Build();
                     options.Filters.Add(new AuthorizeFilter(baselinePolicy));
                 });

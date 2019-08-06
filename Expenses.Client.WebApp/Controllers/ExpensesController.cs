@@ -150,7 +150,7 @@ namespace Expenses.Client.WebApp.Controllers
             // Call the back-end Web API using a bearer access token retrieved from the token provider.
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token.AccessToken);
 
-            value.IsApproved = true;
+            value.Status = ExpenseStatus.Approved;
             var response = await client.PutAsJsonAsync($"api/expenses/{value.Id}", value);
             if (!response.IsSuccessStatusCode)
             {

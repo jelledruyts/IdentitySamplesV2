@@ -15,7 +15,7 @@ namespace Expenses.Common
         {
             public const string ExpenseSubmitter = "ExpenseSubmitter"; // This role can be granted to users only.
             public const string ExpenseApprover = "ExpenseApprover"; // This role can be granted to users only.
-            public const string ExpenseReadWriteAll = "Expense.ReadWrite.All"; // This role can be granted to applications only (as an application permission).
+            public const string ExpensesReadWriteAll = "Expenses.ReadWrite.All"; // This role can be granted to applications only (as an application permission).
         }
 
         public static class ClaimTypes

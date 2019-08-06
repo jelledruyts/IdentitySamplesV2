@@ -42,6 +42,19 @@
             }
         },
         {
+            "name": "Payout Processor",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build",
+            // If you have changed target frameworks, make sure to update the program path.
+            "program": "${workspaceFolder}/Expenses.Client.PayoutProcessor/bin/Debug/netcoreapp2.2/Expenses.Client.PayoutProcessor.dll",
+            "args": [],
+            "cwd": "${workspaceFolder}/Expenses.Client.PayoutProcessor",
+            "console": "externalTerminal",
+            "stopAtEntry": false,
+            "internalConsoleOptions": "openOnSessionStart"
+        },
+        {
             "name": ".NET Core Attach",
             "type": "coreclr",
             "request": "attach",

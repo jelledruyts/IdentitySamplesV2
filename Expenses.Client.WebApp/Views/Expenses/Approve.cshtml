@@ -25,9 +25,9 @@
                     <td>@expense.Purpose</td>
                     <td>@expense.Amount.ToString("c")</td>
                     <td>@expense.CreatedDate.ToString("g")</td>
-                    <td>@(expense.IsApproved ? "Approved" : "Submitted")</td>
+                    <td>@expense.Status.ToString()</td>
                     <td>
-                        @if (!expense.IsApproved)
+                        @if (expense.Status == ExpenseStatus.Submitted)
                         {
                             <form asp-controller="Expenses" asp-action="Approve">
                                 <input type="hidden" name="Id" value="@expense.Id">

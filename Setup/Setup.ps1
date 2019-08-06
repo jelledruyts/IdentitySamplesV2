@@ -3,12 +3,13 @@
 ################################################################################
 $WebApiDisplayName = "Expenses.Api"
 $WebAppDisplayName = "Expenses.Client.WebApp"
+$PayoutProcessorDisplayName = "Expenses.Client.PayoutProcessor"
 
 ################################################################################
 # Initialize
 ################################################################################
 $ErrorActionPreference = "Stop" # Break on errors
-$ApplicationDisplayNames = @($WebApiDisplayName, $WebAppDisplayName)
+$ApplicationDisplayNames = @($WebApiDisplayName, $WebAppDisplayName, $PayoutProcessorDisplayName)
 $CredentialStartDate = Get-Date
 $CredentialEndDate = $CredentialStartDate.AddYears(2)
 
@@ -69,9 +70,9 @@ $WebApiRegistration = New-AzureADApplication `
         [Microsoft.Open.AzureAD.Model.AppRole]@{ `
             AllowedMemberTypes = @("Application"); `
             Description = "Read and write expenses for all users"; `
-            DisplayName = "Expense.ReadWrite.All"; `
+            DisplayName = "Expenses.ReadWrite.All"; `
             Id = [Guid]::NewGuid(); `
-            Value = "Expense.ReadWrite.All"; `
+            Value = "Expenses.ReadWrite.All"; `
         }, `
         [Microsoft.Open.AzureAD.Model.AppRole]@{ `
             AllowedMemberTypes = @("User"); `
@@ -209,6 +210,38 @@ Remove-Oauth2Permission -ObjectId $WebAppRegistration.ObjectId -Oauth2Permission
 Set-AzureADApplicationLogo -ObjectId $WebAppRegistration.ObjectId -FilePath "$PSScriptRoot\Logo-Expenses.Client.WebApp.png"
 
 ################################################################################
+# Register the Payout Processor
+################################################################################
+Write-Host "Registering Azure AD application ""$PayoutProcessorDisplayName""..."
+$PayoutProcessorRegistration = New-AzureADApplication `
+    -DisplayName $PayoutProcessorDisplayName `
+    -RequiredResourceAccess @( <# Define access to other applications #> `
+        [Microsoft.Open.AzureAD.Model.RequiredResourceAccess]@{ `
+            ResourceAppId = $WebApiRegistration.AppId; <# Access certain scopes from the Expenses API by default (to grant initial static consent to them) #> `
+            ResourceAccess = [Microsoft.Open.AzureAD.Model.ResourceAccess]@{ `
+                Id = ($WebApiRegistration.AppRoles | where Value -eq "Expenses.ReadWrite.All").Id; `
+                Type = "Role" `
+            } `
+        } `
+    )
+
+
+# Add a password credential (client secret) to the Application
+$PayoutProcessorClientSecret = New-AzureADApplicationPasswordCredential -ObjectId $PayoutProcessorRegistration.ObjectId -CustomKeyIdentifier "ClientSecret" -StartDate $CredentialStartDate -EndDate $CredentialEndDate
+$PayoutProcessorClientSecretValue = $PayoutProcessorClientSecret.Value
+
+# Associate a Service Principal to the Application 
+$PayoutProcessorServicePrincipal = New-AzureADServicePrincipal -AppId $PayoutProcessorRegistration.AppId
+    
+# Set the owner of the Application to the current user
+$PayoutProcessorRegistrationOwner = Add-AzureADApplicationOwner -ObjectId $PayoutProcessorRegistration.ObjectId -RefObjectId $CurrentUser.ObjectId
+
+# Disable and then remove the default generated "user_impersonation" scope
+Remove-Oauth2Permission -ObjectId $PayoutProcessorRegistration.ObjectId -Oauth2PermissionName "user_impersonation"
+
+$PayoutProcessorRoleAssignment = New-AzureADServiceAppRoleAssignment -ObjectId $PayoutProcessorServicePrincipal.ObjectId -PrincipalId $PayoutProcessorServicePrincipal.ObjectId -ResourceId $WebApiServicePrincipal.ObjectId -Id ($WebApiRegistration.AppRoles | where Value -eq "Expenses.ReadWrite.All").Id
+
+################################################################################
 # Update application configuration
 ################################################################################
 
@@ -225,6 +258,13 @@ dotnet user-secrets --project $WebAppProjectDirectory set AzureAd:TenantId $Curr
 dotnet user-secrets --project $WebAppProjectDirectory set AzureAd:Domain $CurrentSessionInfo.TenantDomain
 dotnet user-secrets --project $WebAppProjectDirectory set AzureAd:ClientSecret "$WebAppClientSecretValue"
 dotnet user-secrets --project $WebAppProjectDirectory set AzureAd:ClientId $WebAppRegistration.AppId
+
+Write-Host "Writing application configuration for ""$PayoutProcessorDisplayName""..."
+$PayoutProcessorProjectDirectory = "$PSScriptRoot\..\Expenses.Client.PayoutProcessor"
+dotnet user-secrets --project $PayoutProcessorProjectDirectory set AzureAd:TenantId $CurrentSessionInfo.TenantId
+dotnet user-secrets --project $PayoutProcessorProjectDirectory set AzureAd:Domain $CurrentSessionInfo.TenantDomain
+dotnet user-secrets --project $PayoutProcessorProjectDirectory set AzureAd:ClientSecret "$PayoutProcessorClientSecretValue"
+dotnet user-secrets --project $PayoutProcessorProjectDirectory set AzureAd:ClientId $PayoutProcessorRegistration.AppId
 
 ################################################################################
 # Assign App Roles to the current user

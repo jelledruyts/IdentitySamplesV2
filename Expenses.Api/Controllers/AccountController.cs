@@ -33,21 +33,21 @@ namespace Expenses.Api.Controllers
         [HttpGet]
         public async Task<ActionResult<IdentityInfo>> Identity()
         {
-            // Get identity information from related applications (i.e. the Microsoft Grpah).
+            // Get identity information from related applications (i.e. the Microsoft Graph).
             var relatedApplicationIdentities = new List<IdentityInfo>();
             try
             {
                 // Call the Microsoft Graph on behalf of the end user to retrieve additional information about the user.
-                var options = new ConfidentialClientApplicationOptions();
-                this.configuration.Bind("AzureAd", options);
-                var confidentialClientApplication = ConfidentialClientApplicationBuilder.CreateWithApplicationOptions(options).Build();
-
                 // Retrieve the original access token that was sent as the incoming request.
                 // NOTE: this requires "SaveToken" to be set to "true", see Startup.cs.
                 var originalToken = await this.HttpContext.GetTokenAsync("access_token");
 
                 if (!string.IsNullOrWhiteSpace(originalToken))
                 {
+                    var options = new ConfidentialClientApplicationOptions();
+                    this.configuration.Bind("AzureAd", options);
+                    var confidentialClientApplication = ConfidentialClientApplicationBuilder.CreateWithApplicationOptions(options).Build();
+
                     // Use the OAuth 2.0 On-Behalf-Of flow to get an access token for the Microsoft Graph.
                     var onBehalfOfToken = await confidentialClientApplication.AcquireTokenOnBehalfOf(new[] { "https://graph.microsoft.com/User.Read" }, new UserAssertion(originalToken)).ExecuteAsync();
 
