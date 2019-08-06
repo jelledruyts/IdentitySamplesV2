@@ -10,7 +10,7 @@ $PayoutProcessorDisplayName = "Expenses.Client.PayoutProcessor"
 ################################################################################
 $ErrorActionPreference = "Stop" # Break on errors
 $ApplicationDisplayNames = @($WebApiDisplayName, $WebAppDisplayName, $PayoutProcessorDisplayName)
-$CredentialStartDate = Get-Date
+$CredentialStartDate = (Get-Date).AddDays(-1) # Make sure the start date is in the past
 $CredentialEndDate = $CredentialStartDate.AddYears(2)
 
 ################################################################################
@@ -227,8 +227,19 @@ $PayoutProcessorRegistration = New-AzureADApplication `
 
 
 # Add a password credential (client secret) to the Application
-$PayoutProcessorClientSecret = New-AzureADApplicationPasswordCredential -ObjectId $PayoutProcessorRegistration.ObjectId -CustomKeyIdentifier "ClientSecret" -StartDate $CredentialStartDate -EndDate $CredentialEndDate
-$PayoutProcessorClientSecretValue = $PayoutProcessorClientSecret.Value
+$PayoutProcessorClientSecretCredential = New-AzureADApplicationPasswordCredential -ObjectId $PayoutProcessorRegistration.ObjectId -CustomKeyIdentifier "ClientSecret" -StartDate $CredentialStartDate -EndDate $CredentialEndDate
+$PayoutProcessorClientSecretValue = $PayoutProcessorClientSecretCredential.Value
+
+# Add a client certificate credential to the Application
+$PayoutProcessorClientCertificateName = "ExpensePayoutProcessor"
+$PayoutProcessorClientCertificate = Get-ChildItem Cert:\CurrentUser\My | where { $_.Subject -eq "CN=$PayoutProcessorClientCertificateName" }
+if ($PayoutProcessorClientCertificate -eq $null)
+{
+    $PayoutProcessorClientCertificate = New-SelfSignedCertificate -CertStoreLocation Cert:\CurrentUser\My -Subject $PayoutProcessorClientCertificateName -KeyExportPolicy Exportable -Provider "Microsoft Enhanced RSA and AES Cryptographic Provider" -NotBefore $CredentialStartDate.AddDays(-1) -NotAfter $CredentialEndDate.AddDays(1) # Ensure the certificate validity period is greater than the credential validity period 
+}
+$PayoutProcessorClientCertificateBase64Thumbprint = [System.Convert]::ToBase64String($PayoutProcessorClientCertificate.GetCertHash())
+$PayoutProcessorClientCertificateBase64Value = [System.Convert]::ToBase64String($PayoutProcessorClientCertificate.GetRawCertData())
+$PayoutProcessorClientCertificateCredential = New-AzureADApplicationKeyCredential -ObjectId $PayoutProcessorRegistration.ObjectId -CustomKeyIdentifier $PayoutProcessorClientCertificateBase64Thumbprint -Type AsymmetricX509Cert -Usage Verify -Value $PayoutProcessorClientCertificateBase64Value -StartDate $CredentialStartDate -EndDate $CredentialEndDate
 
 # Associate a Service Principal to the Application 
 $PayoutProcessorServicePrincipal = New-AzureADServicePrincipal -AppId $PayoutProcessorRegistration.AppId
@@ -265,6 +276,7 @@ dotnet user-secrets --project $PayoutProcessorProjectDirectory set AzureAd:Tenan
 dotnet user-secrets --project $PayoutProcessorProjectDirectory set AzureAd:Domain $CurrentSessionInfo.TenantDomain
 dotnet user-secrets --project $PayoutProcessorProjectDirectory set AzureAd:ClientSecret "$PayoutProcessorClientSecretValue"
 dotnet user-secrets --project $PayoutProcessorProjectDirectory set AzureAd:ClientId $PayoutProcessorRegistration.AppId
+dotnet user-secrets --project $PayoutProcessorProjectDirectory set AzureAd:ClientCertificateName "$PayoutProcessorClientCertificateName"
 
 ################################################################################
 # Assign App Roles to the current user
