@@ -64,7 +64,7 @@ Write-Host "Registering Azure AD application ""$WebApiDisplayName""..."
 $WebApiRegistration = New-AzureADApplication `
     -DisplayName $WebApiDisplayName `
     -Oauth2AllowImplicitFlow $False `
-    -GroupMembershipClaims "SecurityGroup" <# To demonstrate that you can also get group memberships in the token #> `
+    -GroupMembershipClaims "All" <# To demonstrate that you can also get group memberships in the token #> `
     -IdentifierUris @("api://expenses") `
     -AppRoles @( `
         [Microsoft.Open.AzureAD.Model.AppRole]@{ `
@@ -160,6 +160,7 @@ Write-Host "Registering Azure AD application ""$WebAppDisplayName""..."
 $WebAppRegistration = New-AzureADApplication `
     -DisplayName $WebAppDisplayName `
     -Oauth2AllowImplicitFlow $True `
+    -GroupMembershipClaims "All" <# To demonstrate that you can also get group memberships in the token #> `
     -Homepage "https://localhost:5003/" `
     -ReplyUrls $("https://localhost:5003/signin-oidc") `
     -LogoutUrl "https://localhost:5003/signout-oidc" `
