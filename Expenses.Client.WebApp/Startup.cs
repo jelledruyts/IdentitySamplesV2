@@ -34,6 +34,9 @@ namespace Expenses.Client.WebApp
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            // Configure support for the SameSite cookies breaking change.
+            services.ConfigureSameSiteCookiePolicy();
+
             // Inject an HTTP client for the back-end Web API.
             services.AddHttpClient(Constants.HttpClientNames.ExpensesApi, c =>
             {
@@ -267,6 +270,10 @@ namespace Expenses.Client.WebApp
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IHostingEnvironment env)
         {
+            // Apply support for the SameSite cookies breaking change.
+            // This must be called before "UseAuthentication" or anything else that writes cookies.
+            app.ApplySameSiteCookiePolicy();
+
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
