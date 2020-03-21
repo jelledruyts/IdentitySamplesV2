@@ -10,7 +10,7 @@
             "request": "launch",
             "preLaunchTask": "build",
             // If you have changed target frameworks, make sure to update the program path.
-            "program": "${workspaceFolder}/Expenses.Api/bin/Debug/netcoreapp2.2/Expenses.Api.dll",
+            "program": "${workspaceFolder}/Expenses.Api/bin/Debug/netcoreapp3.1/Expenses.Api.dll",
             "args": [],
             "cwd": "${workspaceFolder}/Expenses.Api",
             "stopAtEntry": false,
@@ -27,7 +27,7 @@
             "request": "launch",
             "preLaunchTask": "build",
             // If you have changed target frameworks, make sure to update the program path.
-            "program": "${workspaceFolder}/Expenses.Client.WebApp/bin/Debug/netcoreapp2.2/Expenses.Client.WebApp.dll",
+            "program": "${workspaceFolder}/Expenses.Client.WebApp/bin/Debug/netcoreapp3.1/Expenses.Client.WebApp.dll",
             "args": [],
             "cwd": "${workspaceFolder}/Expenses.Client.WebApp",
             "stopAtEntry": false,
@@ -47,7 +47,7 @@
             "request": "launch",
             "preLaunchTask": "build",
             // If you have changed target frameworks, make sure to update the program path.
-            "program": "${workspaceFolder}/Expenses.Client.PayoutProcessor/bin/Debug/netcoreapp2.2/Expenses.Client.PayoutProcessor.dll",
+            "program": "${workspaceFolder}/Expenses.Client.PayoutProcessor/bin/Debug/netcoreapp3.1/Expenses.Client.PayoutProcessor.dll",
             "args": [],
             "cwd": "${workspaceFolder}/Expenses.Client.PayoutProcessor",
             "console": "externalTerminal",

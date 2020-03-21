@@ -14,10 +14,10 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 
 namespace Expenses.Client.WebApp
@@ -257,18 +257,18 @@ namespace Expenses.Client.WebApp
                 });
             });
 
-            services.AddMvc()
-                .SetCompatibilityVersion(CompatibilityVersion.Version_2_2)
+            services.AddControllersWithViews()
                 .AddMvcOptions(options =>
                 {
                     // Add a global filter that triggers interactive sign-ins on certain exceptions.
                     options.Filters.Add(new InteractiveSignInRequiredExceptionFilterAttribute());
                 });
+            services.AddRazorPages();
             services.AddRouting(options => { options.LowercaseUrls = true; });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
             // Apply support for the SameSite cookies breaking change.
             // This must be called before "UseAuthentication" or anything else that writes cookies.
@@ -287,8 +287,17 @@ namespace Expenses.Client.WebApp
 
             app.UseHttpsRedirection();
             app.UseStaticFiles();
+
+            app.UseRouting();
+
             app.UseAuthentication();
-            app.UseMvc();
+            app.UseAuthorization();
+
+            app.UseEndpoints(endpoints =>
+            {
+                endpoints.MapControllers();
+                endpoints.MapRazorPages();
+            });
         }
     }
 }

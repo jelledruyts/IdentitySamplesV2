@@ -5,16 +5,18 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Expenses.Common.Models;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Identity.Client;
-using Newtonsoft.Json;
 
 namespace Expenses.Client.PayoutProcessor
 {
     class Program
     {
+        private static readonly JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+
         static void Main(string[] args)
         {
             RunAsync(args).Wait();
@@ -106,7 +108,7 @@ namespace Expenses.Client.PayoutProcessor
             var getAllResponse = await client.GetAsync("api/expenses/all");
             getAllResponse.EnsureSuccessStatusCode();
             var allExpensesValue = await getAllResponse.Content.ReadAsStringAsync();
-            var allExpenses = JsonConvert.DeserializeObject<List<Expense>>(allExpensesValue);
+            var allExpenses = JsonSerializer.Deserialize<List<Expense>>(allExpensesValue, jsonSerializerOptions);
 
             // Process all approved expenses by marking them paid and updating them in the back-end Web API.
             var approvedExpenses = allExpenses.Where(e => e.Status == ExpenseStatus.Approved).ToList();
@@ -115,7 +117,7 @@ namespace Expenses.Client.PayoutProcessor
             {
                 Console.WriteLine($"- Processing expense \"{approvedExpense.Id}\" for user \"{approvedExpense.CreatedUserDisplayName}\"");
                 approvedExpense.Status = ExpenseStatus.Paid;
-                var approvedExpenseValue = JsonConvert.SerializeObject(approvedExpense);
+                var approvedExpenseValue = JsonSerializer.Serialize(approvedExpense, jsonSerializerOptions);
                 var updateResponse = await client.PutAsync($"api/expenses/{approvedExpense.Id}", new StringContent(approvedExpenseValue, Encoding.UTF8, "application/json"));
                 updateResponse.EnsureSuccessStatusCode();
             }
