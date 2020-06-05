@@ -42,6 +42,23 @@
             }
         },
         {
+            "name": "Web SPA",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build",
+            // If you have changed target frameworks, make sure to update the program path.
+            "program": "${workspaceFolder}/Expenses.Client.WebSpa/bin/Debug/netcoreapp3.1/Expenses.Client.WebSpa.dll",
+            "args": [],
+            "cwd": "${workspaceFolder}/Expenses.Client.WebSpa",
+            "stopAtEntry": false,
+            "launchBrowser": {
+                "enabled": true
+            },
+            "env": {
+                "ASPNETCORE_ENVIRONMENT": "Development"
+            }
+        },
+        {
             "name": "Payout Processor",
             "type": "coreclr",
             "request": "launch",

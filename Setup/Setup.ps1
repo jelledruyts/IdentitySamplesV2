@@ -3,13 +3,14 @@
 ################################################################################
 $WebApiDisplayName = "Expenses.Api"
 $WebAppDisplayName = "Expenses.Client.WebApp"
+$WebSpaDisplayName = "Expenses.Client.WebSpa"
 $PayoutProcessorDisplayName = "Expenses.Client.PayoutProcessor"
 
 ################################################################################
 # Initialize
 ################################################################################
 $ErrorActionPreference = "Stop" # Break on errors
-$ApplicationDisplayNames = @($WebApiDisplayName, $WebAppDisplayName, $PayoutProcessorDisplayName)
+$ApplicationDisplayNames = @($WebApiDisplayName, $WebAppDisplayName, $WebSpaDisplayName, $PayoutProcessorDisplayName)
 $CredentialStartDate = (Get-Date).AddDays(-1) # Make sure the start date is in the past
 $CredentialEndDate = $CredentialStartDate.AddYears(2)
 
@@ -35,7 +36,7 @@ function Remove-Oauth2Permission($ObjectId, $Oauth2PermissionName)
 ################################################################################
 # Sign in if needed
 ################################################################################
-try 
+try
 {
     $CurrentSessionInfo = Get-AzureADCurrentSessionInfo
 }
@@ -201,14 +202,63 @@ $WebAppServicePrincipal = New-AzureADServicePrincipal -AppId $WebAppRegistration
 # Set the owner of the Application to the current user
 $WebAppRegistrationOwner = Add-AzureADApplicationOwner -ObjectId $WebAppRegistration.ObjectId -RefObjectId $CurrentUser.ObjectId
 
-# Add the Web App's AppID to the Web API's "known client applications"
-Set-AzureADApplication -ObjectId $WebApiRegistration.ObjectId -KnownClientApplications @($WebAppRegistration.AppId)
-
 # Disable and then remove the default generated "user_impersonation" scope
 Remove-Oauth2Permission -ObjectId $WebAppRegistration.ObjectId -Oauth2PermissionName "user_impersonation"
 
 # Upload the logo
 Set-AzureADApplicationLogo -ObjectId $WebAppRegistration.ObjectId -FilePath "$PSScriptRoot\Logo-Expenses.Client.WebApp.png"
+
+################################################################################
+# Register the Web SPA
+################################################################################
+Write-Host "Registering Azure AD application ""$WebSpaDisplayName""..."
+$WebSpaRegistration = New-AzureADApplication `
+    -DisplayName $WebSpaDisplayName `
+    -Oauth2AllowImplicitFlow $True `
+    -GroupMembershipClaims "All" <# To demonstrate that you can also get group memberships in the token #> `
+    -Homepage "https://localhost:5005/" `
+    -ReplyUrls $("https://localhost:5005") `
+    -LogoutUrl "https://localhost:5003" `
+    -RequiredResourceAccess @( <# Define access to other applications #> `
+        [Microsoft.Open.AzureAD.Model.RequiredResourceAccess]@{ `
+            ResourceAppId = "00000003-0000-0000-c000-000000000000"; <# Access the Microsoft Graph #> `
+            ResourceAccess = [Microsoft.Open.AzureAD.Model.ResourceAccess]@{ `
+                Id = "e1fe6dd8-ba31-4d61-89e7-88639da4683d"; <# Request permission "User.Read": Sign you in and read your profile #> `
+                Type = "Scope" `
+            } `
+        }, `
+        [Microsoft.Open.AzureAD.Model.RequiredResourceAccess]@{ `
+            ResourceAppId = $WebApiRegistration.AppId; <# Access certain scopes from the Expenses API by default (to grant initial static consent to them) #> `
+            ResourceAccess = @(
+                [Microsoft.Open.AzureAD.Model.ResourceAccess]@{ `
+                    Id = ($WebApiRegistration.Oauth2Permissions | where Value -eq "Expenses.Read").Id; `
+                    Type = "Scope" `
+                }, `
+                [Microsoft.Open.AzureAD.Model.ResourceAccess]@{ `
+                    Id = ($WebApiRegistration.Oauth2Permissions | where Value -eq "Expenses.ReadWrite").Id; `
+                    Type = "Scope" `
+                }, `
+                [Microsoft.Open.AzureAD.Model.ResourceAccess]@{ `
+                    Id = ($WebApiRegistration.Oauth2Permissions | where Value -eq "Identity.Read").Id; `
+                    Type = "Scope" `
+                } `
+            ) `
+        } `
+    )
+
+# Associate a Service Principal to the Application 
+$WebSpaServicePrincipal = New-AzureADServicePrincipal -AppId $WebSpaRegistration.AppId
+    
+# Set the owner of the Application to the current user
+$WebSpaRegistrationOwner = Add-AzureADApplicationOwner -ObjectId $WebSpaRegistration.ObjectId -RefObjectId $CurrentUser.ObjectId
+
+# Disable and then remove the default generated "user_impersonation" scope
+Remove-Oauth2Permission -ObjectId $WebSpaRegistration.ObjectId -Oauth2PermissionName "user_impersonation"
+
+# Upload the logo
+Set-AzureADApplicationLogo -ObjectId $WebSpaRegistration.ObjectId -FilePath "$PSScriptRoot\Logo-Expenses.Client.WebApp.png"
+
+# TODO: Update the app manifest to change the Reply URL to "type": "Spa" (see https://docs.microsoft.com/en-us/azure/active-directory/develop/v2-oauth2-auth-code-flow#setup-required-for-single-page-apps)
 
 ################################################################################
 # Register the Payout Processor
@@ -254,7 +304,14 @@ Remove-Oauth2Permission -ObjectId $PayoutProcessorRegistration.ObjectId -Oauth2P
 $PayoutProcessorRoleAssignment = New-AzureADServiceAppRoleAssignment -ObjectId $PayoutProcessorServicePrincipal.ObjectId -PrincipalId $PayoutProcessorServicePrincipal.ObjectId -ResourceId $WebApiServicePrincipal.ObjectId -Id ($WebApiRegistration.AppRoles | where Value -eq "Expenses.ReadWrite.All").Id
 
 ################################################################################
-# Update application configuration
+# Update Web API configuration
+################################################################################
+
+# Add the Client ID's to the Web API's "known client applications" list
+Set-AzureADApplication -ObjectId $WebApiRegistration.ObjectId -KnownClientApplications @($WebAppRegistration.AppId, $WebSpaRegistration.AppId)
+
+################################################################################
+# Update local application configuration
 ################################################################################
 
 Write-Host "Writing application configuration for ""$WebApiDisplayName""..."
@@ -270,6 +327,19 @@ dotnet user-secrets --project $WebAppProjectDirectory set AzureAd:TenantId $Curr
 dotnet user-secrets --project $WebAppProjectDirectory set AzureAd:Domain $CurrentSessionInfo.TenantDomain
 dotnet user-secrets --project $WebAppProjectDirectory set AzureAd:ClientSecret "$WebAppClientSecretValue"
 dotnet user-secrets --project $WebAppProjectDirectory set AzureAd:ClientId $WebAppRegistration.AppId
+
+Write-Host "Writing application configuration for ""$WebSpaDisplayName""..."
+$WebSpaProjectDirectory = "$PSScriptRoot\..\Expenses.Client.WebSpa"
+Set-Content -Path "$WebSpaProjectDirectory\wwwroot\appsettings.js" -Value @"
+const appsettings = {
+  scopes: [
+      "api://expenses/.default"
+  ],
+  aadClientId: "$($WebSpaRegistration.AppId)",
+  aadAuthority: "https://login.microsoftonline.com/$($CurrentSessionInfo.TenantDomain)",
+  expensesApiBaseUrl: "https://localhost:5001/"
+};
+"@
 
 Write-Host "Writing application configuration for ""$PayoutProcessorDisplayName""..."
 $PayoutProcessorProjectDirectory = "$PSScriptRoot\..\Expenses.Client.PayoutProcessor"
