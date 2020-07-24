@@ -46,17 +46,26 @@ var ExpensesClientWebSpa = (function ($) {
             });
     }
 
+    var getAccount = function() {
+        var accounts = clientApplication.getAllAccounts();
+        if (!accounts || accounts.length === 0) {
+            return null;
+        } else {
+            return accounts[0];
+        }
+    }
+
     var ensureSignedIn = function () {
-        if (!clientApplication.getAccount()) {
+        if (!getAccount()) {
             performSignIn();
         }
     };
 
     var updateUI = function () {
-        var account = clientApplication.getAccount();
+        var account = getAccount();
         if (account) {
             $("#signInLink").hide();
-            $("#userNameText").text("Hello " + account.name + "!");
+            $("#userNameText").text("Hello " + account.username + "!");
             $("#userNameText").show();
             $("#signOutLink").show();
             $("#identityInfoPanel").show();
@@ -91,11 +100,11 @@ var ExpensesClientWebSpa = (function ($) {
 
         ensureSignedIn();
 
-        clientApplication.acquireTokenSilent({ scopes: appsettings.scopes }).then(function (accessTokenResponse) {
+        clientApplication.acquireTokenSilent({ scopes: appsettings.scopes, account: getAccount() }).then(function (accessTokenResponse) {
             getIdentityInfoFromWebApi(accessTokenResponse.accessToken);
         }).catch(function (error) {
             if (error.name === "InteractionRequiredAuthError") {
-                clientApplication.acquireTokenPopup({ scopes: appsettings.scopes }).then(function (accessTokenResponse) {
+                clientApplication.acquireTokenPopup({ scopes: appsettings.scopes, account: getAccount() }).then(function (accessTokenResponse) {
                     getIdentityInfoFromWebApi(accessTokenResponse.accessToken);
                 }).catch(function (error) {
                     alert("Could not acquire token: " + error);
@@ -112,7 +121,7 @@ var ExpensesClientWebSpa = (function ($) {
         });
         $("#signOutLink").on("click", function (event) {
             event.preventDefault();
-            clientApplication.logout();
+            clientApplication.logout({ account: getAccount() });
         });
         $("#getIdentityInfoButton").on("click", function (event) {
             event.preventDefault();
