@@ -38,6 +38,17 @@ namespace Expenses.Api
                 .AddAzureADBearer(options => Configuration.Bind("AzureAd", options));
             services.Configure<JwtBearerOptions>(AzureADDefaults.JwtBearerAuthenticationScheme, options =>
             {
+                // Optionally, use the Azure AD v2.0 endpoint also on the back-end API for retrieving v2.0 OIDC metadata.
+                // However, this changes the expected "issuer" claim (which is different between v1 and v2 endpoints and tokens)
+                // and potentially other claims that the API may be expecting. In order for this to work, the API must
+                // explicitly opt-in to being issued v2 tokens by setting the "accessTokenAcceptedVersion" attribute
+                // in the API app registration manifest to "2". This cannot be set via PowerShell today, so only enable the
+                // code below to switch to the v2.0 endpoint if you have manually updated the app manifest as well.
+                // See https://docs.microsoft.com/en-us/azure/active-directory/develop/reference-app-manifest#accesstokenacceptedversion-attribute
+                // and https://docs.microsoft.com/en-us/azure/active-directory/develop/access-tokens for more information.
+
+                // options.Authority += "/v2.0";
+
                 // The Azure AD v2.0 endpoint returns the display name in the "name" claim for access tokens.
                 options.TokenValidationParameters.NameClaimType = Constants.ClaimTypes.Name;
 
