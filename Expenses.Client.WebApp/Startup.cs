@@ -62,6 +62,7 @@ namespace Expenses.Client.WebApp
             JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
 
             // Add Azure AD authentication using OpenID Connect.
+#pragma warning disable 0618 // AzureADB2CDefaults is obsolete in favor of "Microsoft.Identity.Web"
             services.AddAuthentication(AzureADDefaults.AuthenticationScheme)
                 .AddAzureAD(options => Configuration.Bind("AzureAd", options));
             services.Configure<OpenIdConnectOptions>(AzureADDefaults.OpenIdScheme, options =>
@@ -234,6 +235,7 @@ namespace Expenses.Client.WebApp
             {
                 // Optionally set authentication cookie options here.
             });
+#pragma warning restore 0618
 
             // Define authorization policies that can be applied to controllers.
             services.AddAuthorization(options =>

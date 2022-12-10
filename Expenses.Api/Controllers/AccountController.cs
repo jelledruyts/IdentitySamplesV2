@@ -4,6 +4,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Security.Claims;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Expenses.Common;
 using Expenses.Common.Models;
@@ -12,7 +13,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Identity.Client;
-using Newtonsoft.Json.Linq;
 
 namespace Expenses.Api.Controllers
 {
@@ -58,7 +58,7 @@ namespace Expenses.Api.Controllers
 
                     // Deserialize and construct an identity from the Microsoft Graph response.
                     var userInfoValue = await response.Content.ReadAsStringAsync();
-                    var userProperties = JObject.Parse(userInfoValue).Children().OfType<JProperty>().Where(c => !c.Name.StartsWith('@')).Select(c => new ClaimInfo { Type = c.Name, Value = c.Value.ToString() }).ToArray();
+                    var userProperties = JsonDocument.Parse(userInfoValue).RootElement.EnumerateObject().Where(p => !p.Name.StartsWith('@')).Select(p => new ClaimInfo { Type = p.Name, Value = p.Value.ToString() }).ToArray();
                     relatedApplicationIdentities.Add(new IdentityInfo
                     {
                         Source = "User API",

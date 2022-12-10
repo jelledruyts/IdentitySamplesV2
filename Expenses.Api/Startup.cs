@@ -34,6 +34,7 @@ namespace Expenses.Api
             JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
 
             // Use JWT Bearer tokens for authentication/authorization.
+#pragma warning disable 0618 // AzureADB2CDefaults is obsolete in favor of "Microsoft.Identity.Web"
             services.AddAuthentication(AzureADDefaults.JwtBearerAuthenticationScheme)
                 .AddAzureADBearer(options => Configuration.Bind("AzureAd", options));
             services.Configure<JwtBearerOptions>(AzureADDefaults.JwtBearerAuthenticationScheme, options =>
@@ -65,6 +66,7 @@ namespace Expenses.Api
                 // Store the incoming tokens for later use (i.e. for the On-Behalf-Of flow).
                 options.SaveToken = true;
             });
+#pragma warning restore 0618
 
             // Define authorization policies that can be applied to API's.
             services.AddAuthorization(options =>
