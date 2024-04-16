@@ -7,7 +7,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Authentication.AzureAD.UI" Version="7.0.0-preview.6.22330.3" />
-    <PackageReference Include="Microsoft.Identity.Client" Version="4.48.1" />
+    <PackageReference Include="Microsoft.Identity.Client" Version="4.59.1" />
   </ItemGroup>
 
   <ItemGroup>
